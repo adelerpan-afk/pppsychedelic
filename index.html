@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Psychedelic Background Generator • Ryzen 6600H MAX</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+</head>
+<body>
+    <div class="controls">
+        <div>
+            <h1>✧ Psychedelic ✧</h1>
+            <p class="subtitle">🍄 WebGL MAX • Ryzen 6600H <span class="perf-badge">🔥 ULTRA OPTIMIZED</span></p>
+        </div>
+
+        <div class="server-warning" id="serverWarning">
+            ⚠️ JALANKAN DENGAN SERVER LOKAL!<br>
+            <code style="font-size:0.6rem;">python -m http.server 8000</code>
+        </div>
+
+        <div class="section-title">🖼️ Resolution</div>
+        <div class="control-group">
+            <label>🌈 Aspect Ratio <span class="value-display" id="ratioValue">16:9</span></label>
+            <select id="aspectRatio">
+                <option value="1:1">Square (1:1)</option>
+                <option value="16:9" selected>Wide (16:9)</option>
+                <option value="9:16">Tall (9:16)</option>
+                <option value="4:3">Classic (4:3)</option>
+                <option value="21:9">Ultrawide (21:9)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>🖼️ Export Resolution <span class="value-display" id="resValue">4K</span></label>
+            <select id="resolution">
+                <option value="1080">1080p</option>
+                <option value="2160" selected>4K (3840×2160)</option>
+                <option value="4320">8K (Warning: Heavy!)</option>
+                <option value="720">720p</option>
+            </select>
+        </div>
+
+        <div class="section-title">🎛️ Shader Parameters</div>
+        <div class="control-group">
+            <label>🌀 Distortion <span class="value-display" id="distortValue">1.5</span></label>
+            <input type="range" id="distortion" min="0.2" max="3.0" step="0.1" value="1.5">
+        </div>
+        <div class="control-group">
+            <label>✨ Complexity <span class="value-display" id="complexValue">3</span></label>
+            <input type="range" id="complexity" min="1" max="8" step="1" value="3">
+        </div>
+        <div class="control-group">
+            <label>🌊 Speed <span class="value-display" id="speedValue">0.5</span></label>
+            <input type="range" id="speed" min="0.05" max="2.0" step="0.05" value="0.5">
+        </div>
+        <div class="control-group">
+            <label>💫 Scale <span class="value-display" id="scaleValue">2.0</span></label>
+            <input type="range" id="scale" min="0.5" max="5.0" step="0.1" value="2.0">
+        </div>
+
+        <div class="section-title">🎨 Color Palette</div>
+        <div class="color-presets" id="colorPresets">
+            <div class="preset-btn active" data-palette="rainbow" style="background: conic-gradient(red, yellow, lime, cyan, blue, magenta, red);"></div>
+            <div class="preset-btn" data-palette="neon" style="background: linear-gradient(135deg, #ff00ff, #00ffff);"></div>
+            <div class="preset-btn" data-palette="sunset" style="background: linear-gradient(135deg, #ff6b6b, #feca57);"></div>
+            <div class="preset-btn" data-palette="ocean" style="background: linear-gradient(135deg, #0abde3, #10ac84);"></div>
+            <div class="preset-btn" data-palette="cosmic" style="background: linear-gradient(135deg, #5f27cd, #341f97);"></div>
+            <div class="preset-btn" data-palette="acid" style="background: linear-gradient(135deg, #b8e994, #78e08f, #38ada9);"></div>
+            <div class="preset-btn" data-palette="custom" style="background: conic-gradient(#fff, #888, #fff);">✏️</div>
+        </div>
+        <div class="control-group">
+            <label>✏️ Custom Palette (HEX, comma)</label>
+            <div class="palette-input-row">
+                <input type="text" id="customPaletteInput" placeholder="#ff0000, #00ff00, #0000ff" spellcheck="false">
+                <button class="btn-sm" id="applyCustomPaletteBtn">Apply</button>
+            </div>
+            <div class="custom-palette-preview" id="customPalettePreview"></div>
+        </div>
+
+        <div class="section-title">🎬 Video Frame Generator</div>
+        <div class="control-group">
+            <label>FPS <span class="value-display" id="fpsValue">30</span></label>
+            <input type="range" id="fps" min="1" max="60" step="1" value="30">
+        </div>
+        <div class="control-group">
+            <label>Duration (sec) <span class="value-display" id="durationValue">5</span></label>
+            <input type="range" id="duration" min="1" max="30" step="1" value="5">
+        </div>
+        <div class="control-group">
+            <label>🏷️ Session Name</label>
+            <input type="text" id="sessionNameInput" placeholder="my_export">
+        </div>
+
+        <div class="section-title">📄 Batch Settings (JSON)</div>
+        <div class="control-group">
+            <div class="json-buttons">
+                <button class="btn-sm" id="downloadSettingsBtn">💾 Download Current</button>
+                <button class="btn-sm" id="loadSettingsBtn">📂 Load Batch JSON</button>
+            </div>
+            <input type="file" id="settingsFileInput" accept="application/json,.json" style="display:none;">
+            <div class="batch-status" id="batchStatus"></div>
+        </div>
+
+        <button class="btn btn-generate" id="generateBtn">🔥 OPTIMIZED Export</button>
+        <button class="btn btn-cancel" id="cancelBtn">⏹️ Cancel</button>
+        <div class="generating-progress" id="miniProgress" style="display: none;">
+            <div class="generating-progress-fill" id="miniProgressFill"></div>
+        </div>
+        <div class="status-text" id="exportStatus">⚡ STANDBY</div>
+        <div class="memory-stats" id="memoryStats"></div>
+        <div class="ffmpeg-hint">
+            💡 FFmpeg:<br>
+            <span id="ffmpegCommand">ffmpeg -framerate 30 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p output.mp4</span>
+        </div>
+        <button class="btn" id="pauseBtn">⏯️ Pause / Play</button>
+        
+        <div style="display:flex;flex-direction:column;gap:7px;">
+            <div class="section-title" style="margin-bottom:0;">💾 Single Export</div>
+            <div class="format-buttons">
+                <button class="format-btn active-format" data-format="png">PNG</button>
+                <button class="format-btn" data-format="jpeg">JPEG</button>
+                <button class="format-btn" data-format="webp">WebP</button>
+            </div>
+            <button class="btn btn-export" id="exportBtn">📥 Export Single</button>
+        </div>
+    </div>
+
+    <div class="canvas-container" id="canvasContainer">
+        <canvas id="mainCanvas"></canvas>
+        <div class="aspect-ratio-indicator" id="ratioIndicator">16:9</div>
+        <div class="generating-overlay" id="generatingOverlay">
+            <div class="generating-text">🔥 OPTIMIZED RENDERING...</div>
+            <div class="generating-progress">
+                <div class="generating-progress-fill" id="generatingProgressFill"></div>
+            </div>
+            <div class="generating-details" id="generatingDetails">0 / 0 frames</div>
+            <div class="generating-speed" id="generatingSpeed">⚡ Optimizing...</div>
+            <div class="memory-usage" id="memoryUsage"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
