@@ -19,6 +19,8 @@ export class BlobMode extends BaseMode {
 
     getShaderCode() {
         return `
+            // ========== BLOB / AMOEBA MODE ==========
+            
             float sdCircle(vec2 p, float r) {
                 return length(p) - r;
             }
