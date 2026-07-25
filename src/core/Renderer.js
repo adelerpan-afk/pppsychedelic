@@ -119,22 +119,20 @@ export class Generator {
      * Resize internal canvas (untuk render dan export)
      * Ukuran internal tetap berdasarkan resolusi
      */
-    resize() {
-        const { width, height } = this.getCanvasSize();
-        
-        // Resize internal canvas
-        this.renderer.resize(width, height);
-        
-        if (this.uniforms && this.uniforms.aspect) {
-            this.renderer.gl.uniform1f(this.uniforms.aspect, width / height);
-        }
-        
-        // Update display size via CSS
-        this.updateDisplaySize();
-        
-        console.log(`📐 Canvas resized: ${width}×${height} (internal)`);
-        return { width, height };
+   // src/core/Renderer.js - Update resize()
+
+resize(width, height) {
+    if (!this.canvas) return;
+    
+    this.canvas.width = width;
+    this.canvas.height = height;
+    
+    if (this.gl) {
+        this.gl.viewport(0, 0, width, height);
     }
+    
+    console.log(`🖼️ Renderer resized: ${width}×${height}`);
+}
 
     /**
      * Update display size via CSS (responsive)
