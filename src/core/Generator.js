@@ -6,6 +6,14 @@ import { ShaderBuilder } from './ShaderBuilder.js';
 import { PsychedelicMode } from '../modes/PsychedelicMode.js';
 import { BlobMode } from '../modes/BlobMode.js';
 import { KaleidoscopeMode } from '../modes/KaleidoscopeMode.js';
+import { FluidMode } from '../modes/FluidMode.js';
+import { TunnelMode } from '../modes/TunnelMode.js';
+import { MorphMode } from '../modes/MorphMode.js';
+import { LiquidMode } from '../modes/LiquidMode.js';
+import { MandelbrotMode } from '../modes/MandelbrotMode.js';
+import { FireMode } from '../modes/FireMode.js';
+import { AuroraMode } from '../modes/AuroraMode.js';
+import { ParticleMode } from '../modes/ParticleMode.js';
 
 export class Generator {
     // ==================== CONSTRUCTOR ====================
@@ -64,7 +72,15 @@ export class Generator {
         this.modes = {
             psychedelic: new PsychedelicMode(),
             blob: new BlobMode(),
-            kaleidoscope: new KaleidoscopeMode()
+            kaleidoscope: new KaleidoscopeMode(),
+            fluid: new FluidMode(),
+            tunnel: new TunnelMode(),
+            morph: new MorphMode(),
+            liquid: new LiquidMode(),
+            mandelbrot: new MandelbrotMode(),
+            fire: new FireMode(),
+            aurora: new AuroraMode(),
+            particle: new ParticleMode()
         };
         console.log('✅ Modes initialized:', Object.keys(this.modes).join(', '));
     }

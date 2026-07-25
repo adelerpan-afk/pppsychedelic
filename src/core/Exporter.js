@@ -74,14 +74,17 @@ export class Exporter {
     }
 
     startWorkers(count, totalFrames, width, height, dirHandle) {
-        const workerUrl = 'render.worker.js';
+        const workerUrl = new URL('../workers/render.worker.js', import.meta.url);
         const busy = new Array(count).fill(false);
         const queue = Array.from({ length: totalFrames }, (_, i) => i);
         const frameRetryCount = new Map();
         const MAX_RETRIES = 3;
         
         for (let i = 0; i < count; i++) {
-            this.workers.push(new Worker(workerUrl));
+            // type: 'module' lets the worker import ShaderBuilder + all mode
+            // classes so exported frames use the EXACT same shader as the
+            // live preview (all modes, not just psychedelic).
+            this.workers.push(new Worker(workerUrl, { type: 'module' }));
         }
 
         const dispatchNext = () => {
@@ -140,6 +143,7 @@ export class Exporter {
 getFrameParams(frameIndex, width, height) {
     const state = this.generator.state;
     const mode = this.generator.getActiveMode();
+    const modeNames = Object.keys(this.generator.modes);
     const palette = this.generator.renderer.palette;
     
     // ✅ Frame-based time for export
@@ -156,6 +160,12 @@ getFrameParams(frameIndex, width, height) {
         loopDuration: state.duration,
         palette: palette,
         paletteCount: palette.length,
+        // Which animation mode to render — the worker builds a shader with
+        // ALL modes (same as the live renderer) and selects by index, so
+        // exported frames always match what's shown on screen.
+        modeNames: modeNames,
+        modeName: this.generator.activeMode,
+        modeIndex: modeNames.indexOf(this.generator.activeMode),
         ...mode.getParams()
     };
 }

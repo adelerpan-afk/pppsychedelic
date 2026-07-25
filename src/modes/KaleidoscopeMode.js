@@ -20,7 +20,6 @@ export class KaleidoscopeMode extends BaseMode {
     getShaderCode() {
         return `
             // ========== KALEIDOSCOPE MODE ==========
-            // Menggunakan shared functions (hash, noise, fbm) dari ShaderBuilder
             
             vec2 kaleidoscopeUV(vec2 uv, float segments) {
                 vec2 p = uv - 0.5;
@@ -37,6 +36,7 @@ export class KaleidoscopeMode extends BaseMode {
                 float rotateSpeed = u_rotationSpeed;
                 float zoom = u_zoom;
                 
+                // Rotasi (tetap linear, tidak diubah)
                 float angle = t * rotateSpeed;
                 mat2 rot = mat2(cos(angle), -sin(angle), sin(angle), cos(angle));
                 
@@ -46,13 +46,29 @@ export class KaleidoscopeMode extends BaseMode {
                 p = p + 0.5;
                 
                 vec2 w = p * 2.0;
-                float n = fbm(w + vec2(t * 0.1, t * 0.15));
-                float n2 = fbm(w * 1.5 - vec2(t * 0.08, t * 0.12) + n * 0.5);
                 
+                // ============================================================
+                // 🔄 PERIODIC FBM DRIFT (SEAMLESS LOOP)
+                // ============================================================
+                // Hitung phase 0 → 2π berdasarkan durasi loop (dalam shader time)
+                float loopT = u_loopDuration * u_speed;
+                float phase = (loopT > 0.0) ? (t / loopT) * 6.28318530718 : 0.0;
+                
+                // Lissajous multi-frekuensi. Kembali ke (0,0) tepat di phase = 2π
+                vec2 drift = vec2(sin(phase * 1.0), cos(phase * 1.3)) * 0.15 +
+                             vec2(sin(phase * 2.1), cos(phase * 0.7)) * 0.05;
+                
+                // FBM layer 1 (dengan drift periodik)
+                float n = fbm(w + drift);
+                // FBM layer 2 (dengan drift periodik, arah sedikit berbeda)
+                float n2 = fbm(w * 1.5 - drift * 0.8 + n * 0.5);
+                
+                // Pola utama
                 float pattern = sin((p.x - 0.5) * 20.0 + n * 5.0) * 
                                cos((p.y - 0.5) * 20.0 + n2 * 5.0) * 0.5 + 0.5;
                 
-                float detail = fbm(w * 3.0 + t * 0.05) * 0.3;
+                // Layer detail (juga pakai drift periodik, biar tidak loncat)
+                float detail = fbm(w * 3.0 + drift * 1.5) * 0.3;
                 pattern = mix(pattern, detail, 0.2);
                 
                 float glow = exp(-length(p - 0.5) * 3.0) * 0.4;
