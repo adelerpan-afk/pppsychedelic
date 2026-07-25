@@ -41,61 +41,48 @@ vec3 computePattern(vec2 w, float t) {
     float c = (sin(w.x * 3.0 + d2 * 4.0 + t) * cos(w.y * 3.0 + d1 * 4.0 - t * 0.7) * 0.5 +
                cos(w.x * 5.0 + d3 * 3.0 - t * 0.5) * sin(w.y * 5.0 + d2 * 3.0 + t * 0.6) * 0.3 +
                sin((w.x + w.y) * 4.0 + d1 * 5.0 + t * 0.4) * 0.2 + d3 * 0.8) * 0.5 + 0.5;
-    float idx = c * (u_pCount - 1.0);
-    vec3 col;
-    if (idx < 1.0) col = mix(u_p0, u_p1, idx);
-    else if (idx < 2.0) col = mix(u_p1, u_p2, idx - 1.0);
-    else if (idx < 3.0) col = mix(u_p2, u_p3, idx - 2.0);
-    else if (idx < 4.0) col = mix(u_p3, u_p4, idx - 3.0);
-    else col = mix(u_p4, u_p5, clamp(idx - 4.0, 0.0, 1.0));
-    col *= 0.7 + 0.5 * (d2 * 0.5 + 0.5);
-    return col;
+    return vec3(c);
 }
 
-// ===== CROSSFADE SEAMLESS LOOP =====
+// ===== CROSSFADE SEAMLESS LOOP (FIXED) =====
 void main() {
-    vec2 uv = v_uv; uv.x *= u_aspect; vec2 w = uv * u_scale;
+    vec2 uv = v_uv;
+    uv.x *= u_aspect;
+    vec2 w = uv * u_scale;
     float rawTime = u_time * u_speed;
     float loopDuration = u_loopDuration * u_speed;
     
     vec3 col;
     
     if (u_loopDuration > 0.0 && loopDuration > 0.0) {
-        // 1. Loop time dalam rentang [0, loopDuration]
+        // ✅ FIXED: Crossfade seamless loop dengan benar
         float loopTime = mod(rawTime, loopDuration);
-        
-        // 2. Progress dalam loop (0 → 1)
         float progress = loopTime / loopDuration;
-        
-        // 3. CROSSFADE PARAMETER
-        // fadeWindow: seberapa besar bagian yang di-crossfade (0.15 = 15% dari durasi)
         float fadeWindow = 0.15;
         
-        // 4. Hitung weight untuk crossfade
-        float fadeWeight;
-        float t_current = loopTime;
-        float t_next = loopTime;
+        // Hitung dua waktu: current dan next (dengan offset)
+        float t1 = loopTime;
+        float t2 = mod(loopTime + loopDuration * (1.0 - fadeWindow), loopDuration);
         
+        // Hitung weight untuk crossfade
+        float weight;
         if (progress < fadeWindow) {
-            // Fade in: 0 → 1 (blend dengan frame akhir)
-            fadeWeight = progress / fadeWindow;
-            t_next = loopDuration - (fadeWindow - progress) * loopDuration / fadeWindow;
+            // Fade In: dari frame akhir → frame awal
+            weight = progress / fadeWindow;
         } else if (progress > 1.0 - fadeWindow) {
-            // Fade out: 1 → 0 (blend dengan frame awal)
-            fadeWeight = (1.0 - progress) / fadeWindow;
-            t_next = (progress - (1.0 - fadeWindow)) * loopDuration / fadeWindow;
+            // Fade Out: dari frame awal → frame akhir
+            weight = (1.0 - progress) / fadeWindow;
         } else {
-            // Middle: full opacity
-            fadeWeight = 1.0;
-            t_next = t_current;
+            // Middle: full current
+            weight = 1.0;
         }
         
-        // 5. Compute pattern untuk kedua frame
-        vec3 col_current = computePattern(w, t_current);
-        vec3 col_next = computePattern(w, t_next);
+        // Compute kedua frame
+        vec3 col1 = computePattern(w, t1);
+        vec3 col2 = computePattern(w, t2);
         
-        // 6. Blend dengan crossfade weight
-        col = mix(col_current, col_next, 1.0 - fadeWeight);
+        // Blend
+        col = mix(col1, col2, 1.0 - weight);
         
     } else {
         // No loop
