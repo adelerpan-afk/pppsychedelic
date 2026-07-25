@@ -74,70 +74,66 @@ class App {
         }, 50);
     }
 
-    updateTimer() {
-        if (!this.generator) return;
+    // src/main.js
 
-        const state = this.generator.state;
-        const duration = state.duration || 5;
-        const fps = state.fps || 30;
-        const elapsed = this.generator.getElapsedTime();
+updateTimer() {
+    if (!this.generator) return;
 
-        // Raw elapsed (tanpa modulo)
-        const rawElapsed = (Date.now() - this.generator.startTime) / 1000;
+    const state = this.generator.state;
+    const duration = state.duration || 5;
+    const fps = state.fps || 30;
+    
+    // ✅ Get frame-based time from generator
+    const currentFrame = this.generator.getCurrentFrame();
+    const totalFrames = this.generator.getTotalFrames();
+    const loopTime = currentFrame / fps;
+    const loopProgress = totalFrames > 0 ? (currentFrame / totalFrames) : 0;
 
-        // Loop time (dengan modulo)
-        const loopTime = duration > 0 ? (rawElapsed % duration) : rawElapsed;
-        const loopProgress = duration > 0 ? (loopTime / duration) : 0;
+    // Format time
+    const minutes = Math.floor(loopTime / 60);
+    const seconds = Math.floor(loopTime % 60);
+    const centiseconds = Math.floor((loopTime % 1) * 100);
 
-        // Current frame
-        const currentFrame = Math.floor(loopTime * fps);
-        const totalFrames = duration * fps;
-
-        // Format time
-        const minutes = Math.floor(loopTime / 60);
-        const seconds = Math.floor(loopTime % 60);
-        const centiseconds = Math.floor((loopTime % 1) * 100);
-
-        // Update timer display
-        if (this.timerDisplay) {
-            this.timerDisplay.textContent = 
-                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
-            
-            // Color based on progress
-            this.timerDisplay.classList.remove('warning', 'danger');
-            if (loopProgress > 0.85) {
-                this.timerDisplay.classList.add('danger');
-            } else if (loopProgress > 0.7) {
-                this.timerDisplay.classList.add('warning');
-            }
-        }
-
-        // Update progress bar
-        if (this.timerProgressFill) {
-            this.timerProgressFill.style.width = `${loopProgress * 100}%`;
-        }
-
-        // Update frame info
-        if (this.timerFrame) {
-            this.timerFrame.textContent = `Frame: ${Math.min(currentFrame, totalFrames)}/${Math.round(totalFrames)}`;
-        }
-
-        // Update FPS info
-        if (this.timerFPS) {
-            this.timerFPS.textContent = `FPS: ${fps}`;
-        }
-
-        // Update status
-        if (this.timerStatus) {
-            if (this.generator.isPaused) {
-                this.updateTimerStatus('paused');
-            } else if (duration > 0 && loopProgress > 0.95) {
-                this.updateTimerStatus('looping');
-            } else {
-                this.updateTimerStatus('live');
-            }
+    // Update timer display
+    if (this.timerDisplay) {
+        this.timerDisplay.textContent = 
+            `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+        
+        // Color based on progress
+        this.timerDisplay.classList.remove('warning', 'danger');
+        if (loopProgress > 0.85) {
+            this.timerDisplay.classList.add('danger');
+        } else if (loopProgress > 0.7) {
+            this.timerDisplay.classList.add('warning');
         }
     }
+
+    // Update progress bar
+    if (this.timerProgressFill) {
+        this.timerProgressFill.style.width = `${loopProgress * 100}%`;
+    }
+
+    // Update frame info
+    if (this.timerFrame) {
+        this.timerFrame.textContent = `Frame: ${Math.round(currentFrame)}/${Math.round(totalFrames)}`;
+    }
+
+    // Update FPS info
+    if (this.timerFPS) {
+        this.timerFPS.textContent = `FPS: ${fps}`;
+    }
+
+    // Update status
+    if (this.timerStatus) {
+        if (this.generator.isPaused) {
+            this.updateTimerStatus('paused');
+        } else if (this.generator.isLooping) {
+            this.updateTimerStatus('looping');
+        } else {
+            this.updateTimerStatus('live');
+        }
+    }
+}
 
     updateTimerStatus(status) {
         if (!this.timerStatus) return;
