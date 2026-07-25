@@ -55,34 +55,37 @@ void main() {
     vec3 col;
     
     if (u_loopDuration > 0.0 && loopDuration > 0.0) {
-        // ✅ FIXED: Crossfade seamless loop dengan benar
         float loopTime = mod(rawTime, loopDuration);
         float progress = loopTime / loopDuration;
-        float fadeWindow = 0.15;
+        float fadeWindow = 0.10;  // 10% dari durasi
         
-        // Hitung dua waktu: current dan next (dengan offset)
         float t1 = loopTime;
-        float t2 = mod(loopTime + loopDuration * (1.0 - fadeWindow), loopDuration);
+        float t2;
         
-        // Hitung weight untuk crossfade
-        float weight;
         if (progress < fadeWindow) {
-            // Fade In: dari frame akhir → frame awal
-            weight = progress / fadeWindow;
+            // FADE IN: blend dari frame AKHIR ke frame AWAL
+            float fadeProgress = progress / fadeWindow;  // 0 → 1
+            t2 = loopDuration - fadeWindow * loopDuration + fadeProgress * fadeWindow * loopDuration;
+            float weight = fadeProgress;
+            
+            vec3 col1 = computePattern(w, t1);
+            vec3 col2 = computePattern(w, t2);
+            col = mix(col1, col2, 1.0 - weight);
+            
         } else if (progress > 1.0 - fadeWindow) {
-            // Fade Out: dari frame awal → frame akhir
-            weight = (1.0 - progress) / fadeWindow;
+            // FADE OUT: blend dari frame AWAL ke frame AKHIR
+            float fadeProgress = (progress - (1.0 - fadeWindow)) / fadeWindow;  // 0 → 1
+            t2 = fadeProgress * fadeWindow * loopDuration;
+            float weight = 1.0 - fadeProgress;
+            
+            vec3 col1 = computePattern(w, t1);
+            vec3 col2 = computePattern(w, t2);
+            col = mix(col1, col2, 1.0 - weight);
+            
         } else {
-            // Middle: full current
-            weight = 1.0;
+            // MIDDLE: full current
+            col = computePattern(w, t1);
         }
-        
-        // Compute kedua frame
-        vec3 col1 = computePattern(w, t1);
-        vec3 col2 = computePattern(w, t2);
-        
-        // Blend
-        col = mix(col1, col2, 1.0 - weight);
         
     } else {
         // No loop
