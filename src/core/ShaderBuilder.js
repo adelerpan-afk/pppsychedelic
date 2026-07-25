@@ -112,37 +112,40 @@ export class ShaderBuilder {
             
             vec3 pattern;
             
-            // ========== PSYCHEDELIC MODE WITH SEAMLESS LOOP ==========
+            // ========== PSYCHEDELIC MODE WITH SEAMLESS LOOP (FIXED) ==========
             if (u_mode == 0) {
                 if (u_loopDuration > 0.0 && loopDuration > 0.0) {
-                    // ✅ FIXED CROSSFADE SEAMLESS LOOP
                     float loopTime = mod(t, loopDuration);
                     float progress = loopTime / loopDuration;
-                    float fadeWindow = 0.15;
+                    float fadeWindow = 0.10;  // 10% dari durasi
                     
-                    // Hitung dua waktu: current dan next (dengan offset)
                     float t1 = loopTime;
-                    float t2 = mod(loopTime + loopDuration * (1.0 - fadeWindow), loopDuration);
+                    float t2;
                     
-                    // Hitung weight untuk crossfade
-                    float weight;
                     if (progress < fadeWindow) {
-                        // Fade In: dari frame akhir → frame awal
-                        weight = progress / fadeWindow;
+                        // FADE IN: blend dari frame AKHIR ke frame AWAL
+                        float fadeProgress = progress / fadeWindow;  // 0 → 1
+                        t2 = loopDuration - fadeWindow * loopDuration + fadeProgress * fadeWindow * loopDuration;
+                        float weight = fadeProgress;
+                        
+                        vec3 col1 = renderPsychedelic(uv, t1);
+                        vec3 col2 = renderPsychedelic(uv, t2);
+                        pattern = mix(col1, col2, 1.0 - weight);
+                        
                     } else if (progress > 1.0 - fadeWindow) {
-                        // Fade Out: dari frame awal → frame akhir
-                        weight = (1.0 - progress) / fadeWindow;
+                        // FADE OUT: blend dari frame AWAL ke frame AKHIR
+                        float fadeProgress = (progress - (1.0 - fadeWindow)) / fadeWindow;  // 0 → 1
+                        t2 = fadeProgress * fadeWindow * loopDuration;
+                        float weight = 1.0 - fadeProgress;
+                        
+                        vec3 col1 = renderPsychedelic(uv, t1);
+                        vec3 col2 = renderPsychedelic(uv, t2);
+                        pattern = mix(col1, col2, 1.0 - weight);
+                        
                     } else {
-                        // Middle: full current
-                        weight = 1.0;
+                        // MIDDLE: full current
+                        pattern = renderPsychedelic(uv, t1);
                     }
-                    
-                    // Compute kedua frame
-                    vec3 col1 = renderPsychedelic(uv, t1);
-                    vec3 col2 = renderPsychedelic(uv, t2);
-                    
-                    // Blend
-                    pattern = mix(col1, col2, 1.0 - weight);
                     
                 } else {
                     pattern = renderPsychedelic(uv, t);
