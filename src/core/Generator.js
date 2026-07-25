@@ -243,11 +243,16 @@ export class Generator {
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
 
-    getElapsedTime() {
-        const raw = (Date.now() - this.startTime) / 1000;
-        const dur = this.state.duration;
-        return dur > 0 ? (raw % dur) : raw;
-    }
+// src/core/Generator.js - Update getElapsedTime()
+
+getElapsedTime() {
+    const raw = (Date.now() - this.startTime) / 1000;
+    const dur = this.state.duration;
+    
+    // ✅ Untuk seamless loop, return raw time (biarkan shader handle modulo)
+    // Shader akan melakukan mod(rawTime, loopDuration * speed)
+    return raw;
+}
 
     // ==================== EXPORT ====================
 
