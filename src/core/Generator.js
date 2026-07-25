@@ -52,25 +52,31 @@ export class Generator {
         const vsSource = builder.buildVertexShader();
         const fsSource = builder.buildFragmentShader(modeNames);
         
-        // Build program temporary untuk get uniforms
-        const tempGL = this.renderer.gl || this.canvas.getContext('webgl2') || this.canvas.getContext('webgl');
-        if (!tempGL) throw new Error('WebGL not supported');
+        // ✅ FIX: Init renderer dulu
+        this.renderer.init(vsSource, fsSource);
         
-        const tempProgram = this.renderer.buildProgram(vsSource, fsSource);
-        this.uniforms = builder.getUniformLocations(tempGL, tempProgram);
+        // ✅ FIX: Ambil uniform locations setelah program siap
+        this.uniforms = builder.getUniformLocations(
+            this.renderer.gl,
+            this.renderer.program
+        );
         
-        // Init renderer dengan uniforms
-        this.renderer.init(vsSource, fsSource, this.uniforms);
+        // ✅ FIX: Set uniforms ke renderer
+        this.renderer.setUniforms(this.uniforms);
         
-        // Set mode uniform
+        // ✅ FIX: Set mode uniform
         this.renderer.gl.uniform1i(this.uniforms.mode, 0);
+        
+        console.log('✅ Shader initialized with', modeNames.length, 'modes');
     }
 
     switchMode(name) {
         if (!this.modes[name]) return;
         this.activeMode = name;
         const index = Object.keys(this.modes).indexOf(name);
-        this.renderer.gl.uniform1i(this.uniforms.mode, index);
+        if (this.renderer.gl && this.uniforms) {
+            this.renderer.gl.uniform1i(this.uniforms.mode, index);
+        }
         console.log(`🎭 Mode: ${name}`);
     }
 
