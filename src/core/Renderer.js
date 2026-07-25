@@ -1,215 +1,308 @@
-// src/core/Generator.js
+// src/core/Renderer.js
 
-import { Renderer } from './Renderer.js';
-import { Exporter } from './Exporter.js';
-import { ShaderBuilder } from './ShaderBuilder.js';
-import { PsychedelicMode } from '../modes/PsychedelicMode.js';
-import { BlobMode } from '../modes/BlobMode.js';
-import { KaleidoscopeMode } from '../modes/KaleidoscopeMode.js';
-
-export class Generator {
+export class Renderer {
     constructor(canvas) {
         this.canvas = canvas;
-        this.renderer = new Renderer(canvas);
-        this.exporter = new Exporter(this);
-        
-        this.modes = {};
-        this.activeMode = 'psychedelic';
-        this.isPaused = false;
-        this.isGenerating = false;
-        this.startTime = Date.now();
-        this.state = {
-            distortion: 1.5,
-            complexity: 3,
-            speed: 0.5,
-            scale: 2.0,
-            aspectRatio: '16:9',
-            resolution: '2160',
-            fps: 30,
-            duration: 5
-        };
-        
-        this.initModes();
-        this.initShader();
-        this.resize(); // ← ini memanggil getCanvasSize()
-        this.startLoop();
-        
-        console.log('✅ Generator initialized');
-    }
-
-    initModes() {
-        this.modes = {
-            psychedelic: new PsychedelicMode(),
-            blob: new BlobMode(),
-            kaleidoscope: new KaleidoscopeMode()
-        };
-    }
-
-    initShader() {
-        const builder = new ShaderBuilder();
-        const modeNames = Object.keys(this.modes);
-        
-        modeNames.forEach(name => builder.registerMode(this.modes[name]));
-        
-        const vsSource = builder.buildVertexShader();
-        const fsSource = builder.buildFragmentShader(modeNames);
-        
-        this.renderer.init(vsSource, fsSource);
-        
-        this.uniforms = builder.getUniformLocations(
-            this.renderer.gl,
-            this.renderer.program
-        );
-        
-        this.renderer.setUniforms(this.uniforms);
-        this.renderer.gl.uniform1i(this.uniforms.mode, 0);
-        
-        console.log('✅ Shader initialized with', modeNames.length, 'modes');
+        this.gl = null;
+        this.program = null;
+        this.isInitialized = false;
+        this.palette = [];
+        this.uniforms = {};
     }
 
     /**
-     * Get internal canvas size based on resolution and aspect ratio
-     * Digunakan untuk export dan render internal
+     * Initialize WebGL context and shaders
      */
-    getCanvasSize() {
-        const height = parseInt(this.state.resolution);
-        const [w, h] = this.state.aspectRatio.split(':').map(Number);
-        return {
-            width: Math.floor(height * w / h),
-            height: height
-        };
-    }
+    init(vsSource, fsSource) {
+        try {
+            const gl = this.canvas.getContext('webgl2', {
+                preserveDrawingBuffer: true,
+                antialias: false,
+                powerPreference: 'high-performance'
+            }) || this.canvas.getContext('webgl', {
+                preserveDrawingBuffer: true,
+                antialias: false,
+                powerPreference: 'high-performance'
+            });
 
-    /**
-     * Get display size based on container (responsive)
-     * Digunakan untuk tampilan di layar
-     */
-    getDisplaySize() {
-        const container = this.canvas.parentElement;
-        if (!container) return { width: 0, height: 0 };
-        
-        const rect = container.getBoundingClientRect();
-        const aspectRatio = 16 / 9;
-        let width = rect.width;
-        let height = rect.width / aspectRatio;
-        
-        if (height > rect.height) {
-            height = rect.height;
-            width = rect.height * aspectRatio;
-        }
-        
-        return { width, height };
-    }
-
-    switchMode(name) {
-        if (!this.modes[name]) return;
-        this.activeMode = name;
-        const index = Object.keys(this.modes).indexOf(name);
-        if (this.renderer.gl && this.uniforms) {
-            this.renderer.gl.uniform1i(this.uniforms.mode, index);
-        }
-        console.log(`🎭 Mode: ${name}`);
-    }
-
-    getActiveMode() {
-        return this.modes[this.activeMode];
-    }
-
-    /**
-     * Resize internal canvas (untuk render dan export)
-     * Ukuran internal tetap berdasarkan resolusi
-     */
-   // src/core/Renderer.js - Update resize()
-
-resize(width, height) {
-    if (!this.canvas) return;
-    
-    this.canvas.width = width;
-    this.canvas.height = height;
-    
-    if (this.gl) {
-        this.gl.viewport(0, 0, width, height);
-    }
-    
-    console.log(`🖼️ Renderer resized: ${width}×${height}`);
-}
-
-    /**
-     * Update display size via CSS (responsive)
-     * Tidak mengubah internal canvas size
-     */
-    updateDisplaySize() {
-        const container = this.canvas.parentElement;
-        if (!container) return;
-        
-        const { width, height } = this.getDisplaySize();
-        
-        // Set display size via CSS
-        this.canvas.style.width = `${width}px`;
-        this.canvas.style.height = `${height}px`;
-        this.canvas.style.maxWidth = '100%';
-        this.canvas.style.maxHeight = '100%';
-        this.canvas.style.objectFit = 'contain';
-        
-        return { width, height };
-    }
-
-    startLoop() {
-        const loop = () => {
-            if (!this.isPaused && !this.isGenerating) {
-                this.renderFrame();
+            if (!gl) {
+                throw new Error('WebGL not supported by this browser');
             }
-            requestAnimationFrame(loop);
-        };
-        loop();
+
+            this.gl = gl;
+
+            // Build and link program
+            this.program = this.buildProgram(vsSource, fsSource);
+            gl.useProgram(this.program);
+
+            // Setup vertex buffer
+            this.setupBuffer();
+
+            // Context loss handling
+            this.setupContextLoss();
+
+            this.isInitialized = true;
+            console.log('✅ WebGL Renderer initialized');
+
+            return gl;
+
+        } catch (err) {
+            console.error('❌ Renderer init error:', err);
+            throw err;
+        }
     }
 
-    renderFrame() {
-        const gl = this.renderer.gl;
-        if (!gl || !this.uniforms) return;
-        
-        const elapsed = this.getElapsedTime();
-        
-        gl.uniform1f(this.uniforms.time, elapsed);
-        gl.uniform1f(this.uniforms.loopDuration, this.state.duration);
-        
-        const mode = this.getActiveMode();
-        mode.updateUniforms(gl, this.uniforms, this.state);
-        
-        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    /**
+     * Setup WebGL context loss handlers
+     */
+    setupContextLoss() {
+        const gl = this.gl;
+        if (!gl) return;
+
+        // Context lost
+        this.canvas.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault();
+            console.warn('⚠️ WebGL context lost');
+            this.isInitialized = false;
+            this.gl = null;
+        });
+
+        // Context restored
+        this.canvas.addEventListener('webglcontextrestored', () => {
+            console.log('✅ WebGL context restored');
+            // Re-initialize with stored shaders
+            if (this.vsSource && this.fsSource) {
+                this.init(this.vsSource, this.fsSource);
+            }
+        });
     }
 
-    getElapsedTime() {
-        const raw = (Date.now() - this.startTime) / 1000;
-        const dur = this.state.duration;
-        return dur > 0 ? (raw % dur) : raw;
+    /**
+     * Build WebGL program from vertex and fragment shaders
+     */
+    buildProgram(vsSource, fsSource) {
+        const gl = this.gl;
+        if (!gl) {
+            throw new Error('WebGL context not initialized');
+        }
+
+        // Store sources for context restore
+        this.vsSource = vsSource;
+        this.fsSource = fsSource;
+
+        // Create shaders
+        const vs = this.createShader(gl.VERTEX_SHADER, vsSource);
+        const fs = this.createShader(gl.FRAGMENT_SHADER, fsSource);
+
+        // Create and link program
+        const program = gl.createProgram();
+        gl.attachShader(program, vs);
+        gl.attachShader(program, fs);
+        gl.linkProgram(program);
+
+        // Check link status
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            const info = gl.getProgramInfoLog(program);
+            console.error('Program link error:', info);
+            throw new Error('Program link failed: ' + info);
+        }
+
+        // Delete shaders after linking
+        gl.deleteShader(vs);
+        gl.deleteShader(fs);
+
+        return program;
     }
 
-    exportSingleImage() {
-        this.exporter.exportSingleImage();
+    /**
+     * Create and compile a shader
+     */
+    createShader(type, source) {
+        const gl = this.gl;
+        const shader = gl.createShader(type);
+
+        if (!shader) {
+            throw new Error('Failed to create shader');
+        }
+
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+
+        // Check compile status
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+            const info = gl.getShaderInfoLog(shader);
+            console.error('Shader compile error:', info);
+            console.error('Shader source:', source);
+
+            // Try to find line with error
+            const lines = source.split('\n');
+            const errorLine = info.match(/ERROR:\s*\d+:(\d+)/);
+            if (errorLine) {
+                const lineNum = parseInt(errorLine[1]);
+                console.error(`Error at line ${lineNum}:`, lines[lineNum - 1]);
+                // Show context
+                const start = Math.max(0, lineNum - 3);
+                const end = Math.min(lines.length, lineNum + 2);
+                console.error('Context:');
+                for (let i = start; i < end; i++) {
+                    console.error(`${i + 1}: ${lines[i]}`);
+                }
+            }
+
+            gl.deleteShader(shader);
+            throw new Error('Shader compile failed: ' + info);
+        }
+
+        return shader;
     }
 
-    startExport(opts = {}) {
-        return this.exporter.startExport(opts);
+    /**
+     * Setup vertex buffer (fullscreen triangle strip)
+     */
+    setupBuffer() {
+        const gl = this.gl;
+        const program = this.program;
+
+        // Create buffer
+        const buffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+
+        // Fullscreen quad vertices (triangle strip)
+        const vertices = new Float32Array([
+            -1, -1,  // bottom-left
+             1, -1,  // bottom-right
+            -1,  1,  // top-left
+             1,  1   // top-right
+        ]);
+
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+        // Get attribute location
+        const aPos = gl.getAttribLocation(program, 'a_position');
+        if (aPos === -1) {
+            console.warn('a_position attribute not found in shader');
+            return;
+        }
+
+        // Enable and set attribute
+        gl.enableVertexAttribArray(aPos);
+        gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+        console.log('✅ Vertex buffer setup complete');
     }
 
-    cancelExport() {
-        this.exporter.cancel();
+    /**
+     * Set uniforms object reference
+     */
+    setUniforms(uniforms) {
+        this.uniforms = uniforms || {};
     }
 
-    getState() {
-        return { ...this.state };
+    /**
+     * Resize canvas and viewport
+     */
+    resize(width, height) {
+        if (!this.canvas) return;
+
+        // Set canvas size (internal resolution)
+        this.canvas.width = width;
+        this.canvas.height = height;
+
+        // Update viewport
+        if (this.gl) {
+            this.gl.viewport(0, 0, width, height);
+        }
+
+        console.log(`🖼️ Renderer resized: ${width}×${height}`);
     }
 
-    updateState(newState) {
-        Object.assign(this.state, newState);
-    }
-
+    /**
+     * Set palette colors to shader uniforms
+     */
     setPalette(palette) {
-        this.renderer.setPalette(palette);
+        this.palette = palette;
+
+        const gl = this.gl;
+        if (!gl || !this.uniforms || !this.uniforms.p0) {
+            console.warn('⚠️ Uniforms not ready, palette will be applied later');
+            return;
+        }
+
+        try {
+            const padded = this.padPalette(palette);
+
+            gl.uniform3fv(this.uniforms.p0, padded[0]);
+            gl.uniform3fv(this.uniforms.p1, padded[1]);
+            gl.uniform3fv(this.uniforms.p2, padded[2]);
+            gl.uniform3fv(this.uniforms.p3, padded[3]);
+            gl.uniform3fv(this.uniforms.p4, padded[4]);
+            gl.uniform3fv(this.uniforms.p5, padded[5]);
+            gl.uniform1f(this.uniforms.pCount, palette.length);
+
+            console.log(`🎨 Palette applied: ${palette.length} colors`);
+
+        } catch (err) {
+            console.error('Failed to set palette:', err);
+        }
     }
 
-    getCanvas() {
-        return this.canvas;
+    /**
+     * Pad palette to 6 colors (for shader)
+     */
+    padPalette(palette) {
+        if (!palette || palette.length === 0) {
+            // Default fallback
+            return [
+                [1, 0, 0], [1, 0.65, 0], [1, 1, 0],
+                [0, 1, 0], [0, 0.5, 1], [0.5, 0, 1]
+            ];
+        }
+
+        if (palette.length >= 6) {
+            return palette.slice(0, 6);
+        }
+
+        const padded = [...palette];
+        const lastColor = palette[palette.length - 1] || [0.5, 0.5, 0.5];
+
+        while (padded.length < 6) {
+            padded.push([...lastColor]);
+        }
+
+        return padded;
+    }
+
+    /**
+     * Get current uniforms
+     */
+    getUniforms() {
+        return this.uniforms;
+    }
+
+    /**
+     * Check if renderer is ready
+     */
+    isReady() {
+        return this.isInitialized && this.gl !== null && this.program !== null;
+    }
+
+    /**
+     * Clean up WebGL resources
+     */
+    dispose() {
+        try {
+            if (this.gl) {
+                if (this.program) {
+                    this.gl.deleteProgram(this.program);
+                    this.program = null;
+                }
+                // Clear all contexts
+                this.gl = null;
+            }
+            this.isInitialized = false;
+            console.log('🧹 Renderer disposed');
+        } catch (err) {
+            console.warn('Error disposing renderer:', err);
+        }
     }
 }
