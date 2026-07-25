@@ -67,7 +67,7 @@
 
 ## 🔄 Flowchart Aplikasi
 
-```mermaid
+```
 flowchart TD
     A[User Buka Browser] --> B[load index.html]
     B --> C[main.js: App]
