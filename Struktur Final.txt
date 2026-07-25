@@ -1,0 +1,24 @@
+project/
+├── index.html
+├── style.css
+├── render.worker.js
+└── src/
+    ├── main.js
+    ├── core/
+    │   ├── Generator.js
+    │   ├── Renderer.js
+    │   ├── Exporter.js
+    │   └── ShaderBuilder.js
+    ├── modes/
+    │   ├── BaseMode.js
+    │   ├── PsychedelicMode.js
+    │   ├── BlobMode.js
+    │   └── KaleidoscopeMode.js
+    ├── ui/
+    │   ├── UIController.js
+    │   ├── PaletteUI.js
+    │   ├── ExportUI.js
+    │   └── BatchUI.js
+    └── utils/
+        ├── constants.js
+        └── helpers.js
