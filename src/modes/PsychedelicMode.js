@@ -19,28 +19,8 @@ export class PsychedelicMode extends BaseMode {
 
     getShaderCode() {
         return `
-            float hash(vec2 p) {
-                return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-            }
-            
-            float noise(vec2 p) {
-                vec2 i = floor(p);
-                vec2 f = fract(p);
-                f = f * f * (3.0 - 2.0 * f);
-                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
-                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
-            }
-            
-            float fbm(vec2 p) {
-                float v = 0.0, a = 0.5, f = 1.0;
-                for (int i = 0; i < 8; i++) {
-                    if (float(i) >= u_complexity) break;
-                    v += a * noise(p * f);
-                    f *= 2.0;
-                    a *= 0.6;
-                }
-                return v;
-            }
+            // ========== PSYCHEDELIC MODE ==========
+            // Menggunakan shared functions (hash, noise, fbm) dari ShaderBuilder
             
             vec3 renderPsychedelic(vec2 uv, float t) {
                 vec2 w = uv * u_scale;
@@ -52,15 +32,16 @@ export class PsychedelicMode extends BaseMode {
                            cos(w.x * 5.0 + d3 * 3.0 - t * 0.5) * sin(w.y * 5.0 + d2 * 3.0 + t * 0.6) * 0.3 +
                            sin((w.x + w.y) * 4.0 + d1 * 5.0 + t * 0.4) * 0.2 + d3 * 0.8) * 0.5 + 0.5;
                 
-                return c * vec3(1.0);
+                return vec3(c);
             }
         `;
     }
 
     updateUniforms(gl, uniforms, params) {
-        gl.uniform1f(uniforms.distortion, params.distortion || this.params.distortion);
-        gl.uniform1f(uniforms.complexity, params.complexity || this.params.complexity);
-        gl.uniform1f(uniforms.speed, params.speed || this.params.speed);
-        gl.uniform1f(uniforms.scale, params.scale || this.params.scale);
+        const p = { ...this.params, ...params };
+        gl.uniform1f(uniforms.distortion, p.distortion);
+        gl.uniform1f(uniforms.complexity, p.complexity);
+        gl.uniform1f(uniforms.speed, p.speed);
+        gl.uniform1f(uniforms.scale, p.scale);
     }
 }
