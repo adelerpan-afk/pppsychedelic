@@ -23,10 +23,42 @@ export class ShaderBuilder {
             }`;
     }
 
+    /**
+     * Build shared utility functions (hanya sekali, tidak duplicate)
+     */
+    getSharedFunctions() {
+        return `
+            // ========== SHARED UTILITY FUNCTIONS ==========
+            float hash(vec2 p) {
+                return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+            }
+            
+            float noise(vec2 p) {
+                vec2 i = floor(p);
+                vec2 f = fract(p);
+                f = f * f * (3.0 - 2.0 * f);
+                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
+                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
+            }
+            
+            float fbm(vec2 p) {
+                float v = 0.0, a = 0.5, f = 1.0;
+                for (int i = 0; i < 8; i++) {
+                    if (float(i) >= u_complexity) break;
+                    v += a * noise(p * f);
+                    f *= 2.0;
+                    a *= 0.6;
+                }
+                return v;
+            }
+        `;
+    }
+
     buildFragmentShader(modeNames) {
+        // Build mode code (tanpa shared functions)
         let modeCode = '';
         const modeList = [];
-        modeNames.forEach((name, index) => {
+        modeNames.forEach((name) => {
             const code = this.modeCodes.get(name);
             if (code) {
                 modeCode += code;
@@ -34,6 +66,7 @@ export class ShaderBuilder {
             }
         });
 
+        // Build mode selector
         let modeSelector = '';
         modeList.forEach((name, index) => {
             const funcName = `render${name.charAt(0).toUpperCase() + name.slice(1)}`;
@@ -49,12 +82,18 @@ export class ShaderBuilder {
         uniform float u_pCount;
         uniform int u_mode;
         
+        // ===== MODE SPECIFIC UNIFORMS =====
         uniform float u_distortion, u_complexity, u_speed, u_scale;
         uniform float u_blobCount, u_blobSize, u_blobSpeed, u_blobWobble;
         uniform float u_segments, u_rotationSpeed, u_zoom;
         
+        // ===== SHARED FUNCTIONS =====
+        ${this.getSharedFunctions()}
+        
+        // ===== MODE CODE =====
         ${modeCode}
         
+        // ===== PALETTE HELPER =====
         vec3 mixPalette(float idx) {
             vec3 col;
             if (idx < 1.0) col = mix(u_p0, u_p1, idx);
@@ -85,6 +124,7 @@ export class ShaderBuilder {
 
     getUniformLocations(gl, program) {
         return {
+            // Common
             time: gl.getUniformLocation(program, 'u_time'),
             loopDuration: gl.getUniformLocation(program, 'u_loopDuration'),
             aspect: gl.getUniformLocation(program, 'u_aspect'),
@@ -96,14 +136,20 @@ export class ShaderBuilder {
             p4: gl.getUniformLocation(program, 'u_p4'),
             p5: gl.getUniformLocation(program, 'u_p5'),
             mode: gl.getUniformLocation(program, 'u_mode'),
+            
+            // Psychedelic
             distortion: gl.getUniformLocation(program, 'u_distortion'),
             complexity: gl.getUniformLocation(program, 'u_complexity'),
             speed: gl.getUniformLocation(program, 'u_speed'),
             scale: gl.getUniformLocation(program, 'u_scale'),
+            
+            // Blob
             blobCount: gl.getUniformLocation(program, 'u_blobCount'),
             blobSize: gl.getUniformLocation(program, 'u_blobSize'),
             blobSpeed: gl.getUniformLocation(program, 'u_blobSpeed'),
             blobWobble: gl.getUniformLocation(program, 'u_blobWobble'),
+            
+            // Kaleidoscope
             segments: gl.getUniformLocation(program, 'u_segments'),
             rotationSpeed: gl.getUniformLocation(program, 'u_rotationSpeed'),
             zoom: gl.getUniformLocation(program, 'u_zoom'),
