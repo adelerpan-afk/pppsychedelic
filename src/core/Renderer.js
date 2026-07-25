@@ -10,7 +10,7 @@ export class Renderer {
         this.uniforms = {};
     }
 
-    init(vsSource, fsSource, uniforms) {
+    init(vsSource, fsSource) {
         const gl = this.canvas.getContext('webgl2', {
             preserveDrawingBuffer: true,
             antialias: false,
@@ -29,13 +29,17 @@ export class Renderer {
 
         this.setupBuffer();
         
-        this.uniforms = uniforms || {};
         this.isInitialized = true;
         return gl;
     }
 
+    setUniforms(uniforms) {
+        this.uniforms = uniforms || {};
+    }
+
     buildProgram(vsSource, fsSource) {
         const gl = this.gl;
+        if (!gl) throw new Error('WebGL context not initialized');
         
         const vs = this.createShader(gl.VERTEX_SHADER, vsSource);
         const fs = this.createShader(gl.FRAGMENT_SHADER, fsSource);
@@ -46,7 +50,9 @@ export class Renderer {
         gl.linkProgram(program);
         
         if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-            throw new Error('Program link failed');
+            const info = gl.getProgramInfoLog(program);
+            console.error('Program link error:', info);
+            throw new Error('Program link failed: ' + info);
         }
         
         return program;
@@ -59,8 +65,10 @@ export class Renderer {
         gl.compileShader(shader);
         
         if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-            console.error('Shader error:', gl.getShaderInfoLog(shader));
-            throw new Error('Shader compile failed');
+            const info = gl.getShaderInfoLog(shader);
+            console.error('Shader compile error:', info);
+            console.error('Shader source:', source);
+            throw new Error('Shader compile failed: ' + info);
         }
         
         return shader;
@@ -82,7 +90,9 @@ export class Renderer {
     resize(width, height) {
         this.canvas.width = width;
         this.canvas.height = height;
-        this.gl.viewport(0, 0, width, height);
+        if (this.gl) {
+            this.gl.viewport(0, 0, width, height);
+        }
     }
 
     setPalette(palette) {
