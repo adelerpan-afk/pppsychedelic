@@ -108,9 +108,46 @@ export class ShaderBuilder {
             vec2 uv = v_uv;
             uv.x *= u_aspect;
             float t = u_time * u_speed;
+            float loopDuration = u_loopDuration * u_speed;
             
             vec3 pattern;
-            if (u_mode == 0) pattern = renderPsychedelic(uv, t);
+            
+            // ========== PSYCHEDELIC MODE WITH SEAMLESS LOOP ==========
+            if (u_mode == 0) {
+                if (u_loopDuration > 0.0 && loopDuration > 0.0) {
+                    // ✅ FIXED CROSSFADE SEAMLESS LOOP
+                    float loopTime = mod(t, loopDuration);
+                    float progress = loopTime / loopDuration;
+                    float fadeWindow = 0.15;
+                    
+                    // Hitung dua waktu: current dan next (dengan offset)
+                    float t1 = loopTime;
+                    float t2 = mod(loopTime + loopDuration * (1.0 - fadeWindow), loopDuration);
+                    
+                    // Hitung weight untuk crossfade
+                    float weight;
+                    if (progress < fadeWindow) {
+                        // Fade In: dari frame akhir → frame awal
+                        weight = progress / fadeWindow;
+                    } else if (progress > 1.0 - fadeWindow) {
+                        // Fade Out: dari frame awal → frame akhir
+                        weight = (1.0 - progress) / fadeWindow;
+                    } else {
+                        // Middle: full current
+                        weight = 1.0;
+                    }
+                    
+                    // Compute kedua frame
+                    vec3 col1 = renderPsychedelic(uv, t1);
+                    vec3 col2 = renderPsychedelic(uv, t2);
+                    
+                    // Blend
+                    pattern = mix(col1, col2, 1.0 - weight);
+                    
+                } else {
+                    pattern = renderPsychedelic(uv, t);
+                }
+            }
             ${modeSelector}
             
             float idx = pattern.r * (u_pCount - 1.0);
