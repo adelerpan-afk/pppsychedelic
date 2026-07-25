@@ -84,20 +84,41 @@ export class Generator {
         return this.modes[this.activeMode];
     }
 
-    resize() {
-        const { width, height } = this.getCanvasSize();
-        this.renderer.resize(width, height);
-        if (this.uniforms && this.uniforms.aspect) {
-            this.renderer.gl.uniform1f(this.uniforms.aspect, width / height);
-        }
-        return { width, height };
-    }
+    // src/core/Generator.js - Update resize method
 
-    getCanvasSize() {
-        const height = parseInt(this.state.resolution);
-        const [w, h] = this.state.aspectRatio.split(':').map(Number);
-        return { width: Math.floor(height * w / h), height };
+resize() {
+    const { width, height } = this.getCanvasSize();
+    
+    // Canvas internal size (untuk export) tetap sesuai resolusi
+    this.renderer.resize(width, height);
+    
+    if (this.uniforms && this.uniforms.aspect) {
+        this.renderer.gl.uniform1f(this.uniforms.aspect, width / height);
     }
+    
+    // Update display size via CSS (dari main.js)
+    // Canvas display size diatur oleh CSS, tidak mengubah internal size
+    
+    return { width, height };
+}
+
+// Tambahkan method untuk mendapatkan display size
+getDisplaySize() {
+    const container = this.canvas.parentElement;
+    if (!container) return { width: 0, height: 0 };
+    
+    const rect = container.getBoundingClientRect();
+    const aspectRatio = 16 / 9;
+    let width = rect.width;
+    let height = rect.width / aspectRatio;
+    
+    if (height > rect.height) {
+        height = rect.height;
+        width = rect.height * aspectRatio;
+    }
+    
+    return { width, height };
+}
 
     startLoop() {
         const loop = () => {
