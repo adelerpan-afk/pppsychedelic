@@ -1,11 +1,10 @@
-// src/main.js
+// src/main.js - Tambah timer handling
 
 import { Generator } from './core/Generator.js';
 import { UIController } from './ui/UIController.js';
 import { DEFAULT_PALETTES } from './utils/constants.js';
 
 class App {
-    // ==================== CONSTRUCTOR ====================
     constructor() {
         this.canvas = document.getElementById('mainCanvas');
         this.canvasWrapper = document.getElementById('canvasWrapper');
@@ -16,6 +15,13 @@ class App {
         }
 
         console.log('🚀 Initializing App...');
+
+        // Timer elements
+        this.timerDisplay = document.getElementById('timerDisplay');
+        this.timerProgressFill = document.getElementById('timerProgressFill');
+        this.timerFrame = document.getElementById('timerFrame');
+        this.timerFPS = document.getElementById('timerFPS');
+        this.timerStatus = document.getElementById('timerStatus');
 
         // Create generator
         this.generator = new Generator(this.canvas);
@@ -29,13 +35,16 @@ class App {
         // Setup resize
         this.setupResize();
 
+        // Start timer update loop
+        this.startTimerLoop();
+
         console.log('✅ App initialized');
     }
 
     // ==================== INIT ====================
 
     init() {
-        // Set default palette (delay agar renderer siap)
+        // Set default palette
         setTimeout(() => {
             if (this.generator && this.generator.setPalette) {
                 this.generator.setPalette(DEFAULT_PALETTES.rainbow);
@@ -51,6 +60,97 @@ class App {
 
         // Update display size
         setTimeout(() => this.resizeCanvas(), 300);
+
+        // Timer status
+        this.updateTimerStatus('live');
+    }
+
+    // ==================== TIMER LOOP ====================
+
+    startTimerLoop() {
+        // Update timer setiap 50ms (20fps update)
+        this.timerInterval = setInterval(() => {
+            this.updateTimer();
+        }, 50);
+    }
+
+    updateTimer() {
+        if (!this.generator) return;
+
+        const state = this.generator.state;
+        const duration = state.duration || 5;
+        const fps = state.fps || 30;
+        const elapsed = this.generator.getElapsedTime();
+
+        // Raw elapsed (tanpa modulo)
+        const rawElapsed = (Date.now() - this.generator.startTime) / 1000;
+
+        // Loop time (dengan modulo)
+        const loopTime = duration > 0 ? (rawElapsed % duration) : rawElapsed;
+        const loopProgress = duration > 0 ? (loopTime / duration) : 0;
+
+        // Current frame
+        const currentFrame = Math.floor(loopTime * fps);
+        const totalFrames = duration * fps;
+
+        // Format time
+        const minutes = Math.floor(loopTime / 60);
+        const seconds = Math.floor(loopTime % 60);
+        const centiseconds = Math.floor((loopTime % 1) * 100);
+
+        // Update timer display
+        if (this.timerDisplay) {
+            this.timerDisplay.textContent = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(centiseconds).padStart(2, '0')}`;
+            
+            // Color based on progress
+            this.timerDisplay.classList.remove('warning', 'danger');
+            if (loopProgress > 0.85) {
+                this.timerDisplay.classList.add('danger');
+            } else if (loopProgress > 0.7) {
+                this.timerDisplay.classList.add('warning');
+            }
+        }
+
+        // Update progress bar
+        if (this.timerProgressFill) {
+            this.timerProgressFill.style.width = `${loopProgress * 100}%`;
+        }
+
+        // Update frame info
+        if (this.timerFrame) {
+            this.timerFrame.textContent = `Frame: ${Math.min(currentFrame, totalFrames)}/${Math.round(totalFrames)}`;
+        }
+
+        // Update FPS info
+        if (this.timerFPS) {
+            this.timerFPS.textContent = `FPS: ${fps}`;
+        }
+
+        // Update status
+        if (this.timerStatus) {
+            if (this.generator.isPaused) {
+                this.updateTimerStatus('paused');
+            } else if (duration > 0 && loopProgress > 0.95) {
+                this.updateTimerStatus('looping');
+            } else {
+                this.updateTimerStatus('live');
+            }
+        }
+    }
+
+    updateTimerStatus(status) {
+        if (!this.timerStatus) return;
+
+        const statusTexts = {
+            live: { text: '● LIVE', class: 'live' },
+            paused: { text: '⏸ PAUSED', class: 'paused' },
+            looping: { text: '🔄 LOOPING', class: 'looping' }
+        };
+
+        const info = statusTexts[status] || statusTexts.live;
+        this.timerStatus.textContent = info.text;
+        this.timerStatus.className = `timer-status ${info.class}`;
     }
 
     // ==================== SERVER CHECK ====================
@@ -95,14 +195,12 @@ class App {
     // ==================== RESIZE HANDLING ====================
 
     setupResize() {
-        // Debounce resize event
         let resizeTimeout;
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => this.resizeCanvas(), 100);
         });
 
-        // Observer untuk perubahan ukuran container
         if (window.ResizeObserver && this.canvasWrapper) {
             const observer = new ResizeObserver(() => {
                 this.resizeCanvas();
@@ -121,35 +219,29 @@ class App {
 
         if (!container) return;
 
-        // Dapatkan ukuran container
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
 
         if (containerWidth === 0 || containerHeight === 0) return;
 
-        // Hitung ukuran display berdasarkan aspect ratio 16:9
         const aspectRatio = 16 / 9;
         let width = containerWidth;
         let height = containerWidth / aspectRatio;
 
-        // Jika tinggi melebihi container, sesuaikan dengan tinggi
         if (height > containerHeight) {
             height = containerHeight;
             width = containerHeight * aspectRatio;
         }
 
-        // Set wrapper size
         wrapper.style.width = `${width}px`;
         wrapper.style.height = `${height}px`;
         wrapper.style.maxWidth = '100%';
         wrapper.style.maxHeight = '100%';
 
-        // Update canvas display size
         if (this.generator && this.generator.updateDisplaySize) {
             this.generator.updateDisplaySize();
         }
 
-        // Update aspect ratio indicator
         this.updateRatioIndicator(width, height);
 
         console.log(`📐 Display resized: ${Math.round(width)}×${Math.round(height)}`);
@@ -173,6 +265,11 @@ class App {
     }
 
     dispose() {
+        if (this.timerInterval) {
+            clearInterval(this.timerInterval);
+            this.timerInterval = null;
+        }
+
         if (this.generator && typeof this.generator.dispose === 'function') {
             this.generator.dispose();
         }
@@ -189,7 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const app = new App();
         window.app = app;
 
-        // Additional resize after fonts/images load
         window.addEventListener('load', () => {
             setTimeout(() => {
                 if (window.app && window.app.resizeCanvas) {
@@ -203,7 +299,6 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (err) {
         console.error('❌ Failed to start app:', err);
 
-        // Show error on page
         const container = document.getElementById('canvasContainer');
         if (container) {
             container.innerHTML = `
