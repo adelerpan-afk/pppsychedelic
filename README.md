@@ -65,20 +65,18 @@
 
 ### 1. Inisialisasi Aplikasi
 
-```
-User Buka Browser
-       │
-       ▼
-load index.html
-       │
-       ▼
-main.js: App
-├── Create canvas
-├── Instantiate Generator
-├── Instantiate UIController
-├── Set default palette (rainbow)
-├── Check server protocol (file:// warning)
-└── Display memory stats
+## 🔄 Flowchart Aplikasi
+
+```mermaid
+flowchart TD
+    A[User Buka Browser] --> B[load index.html]
+    B --> C[main.js: App]
+    C --> D[Create canvas]
+    D --> E[Instantiate Generator]
+    E --> F[Instantiate UIController]
+    F --> G[Set default palette]
+    G --> H[Check server protocol]
+    H --> I[Display memory stats]
 ```
 
 ### 2. Render Loop (Real-time)
