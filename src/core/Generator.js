@@ -243,14 +243,19 @@ export class Generator {
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
 
+// Tambahkan method untuk reset timer
+resetTimer() {
+    this.startTime = Date.now();
+    console.log('⏱️ Timer reset');
+}
+    
 // src/core/Generator.js - Update getElapsedTime()
 
+// Update getElapsedTime() untuk raw time
 getElapsedTime() {
     const raw = (Date.now() - this.startTime) / 1000;
     const dur = this.state.duration;
-    
-    // ✅ Untuk seamless loop, return raw time (biarkan shader handle modulo)
-    // Shader akan melakukan mod(rawTime, loopDuration * speed)
+    // Return raw time, shader handle modulo
     return raw;
 }
 
