@@ -1,5 +1,41 @@
 // src/utils/helpers.js
 
+// src/utils/helpers.js - Tambahan
+
+// ... existing code ...
+
+/**
+ * Get display size berdasarkan container
+ */
+export function getDisplaySize(container, aspectRatio = 16/9) {
+    if (!container) return { width: 0, height: 0 };
+    
+    const rect = container.getBoundingClientRect();
+    let width = rect.width;
+    let height = width / aspectRatio;
+    
+    if (height > rect.height) {
+        height = rect.height;
+        width = height * aspectRatio;
+    }
+    
+    return { width, height };
+}
+
+/**
+ * Update canvas display size
+ */
+export function updateCanvasDisplay(canvas, container, aspectRatio = 16/9) {
+    const { width, height } = getDisplaySize(container, aspectRatio);
+    
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    canvas.style.maxWidth = '100%';
+    canvas.style.maxHeight = '100%';
+    
+    return { width, height };
+}
+
 export function hexToRgb(hex) {
     hex = hex.replace('#', '').trim();
     if (hex.length === 3) {
