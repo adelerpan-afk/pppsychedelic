@@ -135,23 +135,25 @@ export class Exporter {
 
     // src/core/Exporter.js - Update getFrameParams()
 
+// src/core/Exporter.js
+
 getFrameParams(frameIndex, width, height) {
     const state = this.generator.state;
     const mode = this.generator.getActiveMode();
     const palette = this.generator.renderer.palette;
     
-    // ✅ Kirim raw time, biarkan shader handle loop
+    // ✅ Frame-based time for export
     const time = frameIndex / state.fps;
     
     return {
         width, height,
-        time: time,  // raw time, shader akan modulo
+        time: time,
         distortion: state.distortion,
         complexity: state.complexity,
         speed: state.speed,
         scale: state.scale,
         aspect: width / height,
-        loopDuration: state.duration,  // untuk modulo di shader
+        loopDuration: state.duration,
         palette: palette,
         paletteCount: palette.length,
         ...mode.getParams()
