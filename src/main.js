@@ -8,6 +8,14 @@ class App {
     constructor() {
         this.canvas = document.getElementById('mainCanvas');
         this.canvasWrapper = document.getElementById('canvasWrapper');
+        
+        if (!this.canvas) {
+            console.error('Canvas not found!');
+            return;
+        }
+        
+        console.log('🚀 Initializing App...');
+        
         this.generator = new Generator(this.canvas);
         this.ui = new UIController(this.generator);
         
@@ -18,29 +26,40 @@ class App {
     init() {
         // Set default palette
         setTimeout(() => {
-            this.generator.setPalette(DEFAULT_PALETTES.rainbow);
-        }, 100);
+            if (this.generator && this.generator.setPalette) {
+                this.generator.setPalette(DEFAULT_PALETTES.rainbow);
+                console.log('🎨 Default palette set: rainbow');
+            }
+        }, 200);
         
         // Check server
         if (window.location.protocol === 'file:') {
-            document.getElementById('serverWarning').innerHTML = 
-                '❌ RUN WITH LOCAL SERVER!<br><code>python -m http.server 8000</code>';
-            document.getElementById('generateBtn').disabled = true;
+            const warning = document.getElementById('serverWarning');
+            if (warning) {
+                warning.innerHTML = 
+                    '❌ RUN WITH LOCAL SERVER!<br><code>python -m http.server 8000</code>';
+            }
+            const btn = document.getElementById('generateBtn');
+            if (btn) {
+                btn.disabled = true;
+            }
         }
         
         // Set worker info
         const cores = navigator.hardwareConcurrency || 8;
         const workers = Math.min(4, Math.max(2, cores - 2));
-        document.getElementById('memoryStats').textContent = 
-            `🧠 ${cores} cores | 🚀 ${workers} workers`;
+        const stats = document.getElementById('memoryStats');
+        if (stats) {
+            stats.textContent = `🧠 ${cores} cores | 🚀 ${workers} workers`;
+        }
         
         console.log(`🔥 Ready | ${cores} threads | ${workers} workers`);
+        
+        // Update display size after init
+        setTimeout(() => this.resizeCanvas(), 300);
     }
 
     setupResize() {
-        // Resize canvas wrapper berdasarkan container
-        this.resizeCanvas();
-        
         // Debounce resize event
         let resizeTimeout;
         window.addEventListener('resize', () => {
@@ -49,15 +68,19 @@ class App {
         });
 
         // Observer untuk perubahan ukuran container
-        if (window.ResizeObserver) {
+        if (window.ResizeObserver && this.canvasWrapper) {
             const observer = new ResizeObserver(() => {
                 this.resizeCanvas();
             });
             observer.observe(this.canvasWrapper);
         }
+        
+        console.log('📐 Resize handler setup complete');
     }
 
     resizeCanvas() {
+        if (!this.canvas || !this.canvasWrapper) return;
+        
         const wrapper = this.canvasWrapper;
         const container = wrapper.parentElement;
         
@@ -67,7 +90,9 @@ class App {
         const containerWidth = container.clientWidth;
         const containerHeight = container.clientHeight;
         
-        // Hitung ukuran canvas berdasarkan aspect ratio 16:9
+        if (containerWidth === 0 || containerHeight === 0) return;
+        
+        // Hitung ukuran display berdasarkan aspect ratio 16:9
         const aspectRatio = 16 / 9;
         let width = containerWidth;
         let height = containerWidth / aspectRatio;
@@ -84,28 +109,43 @@ class App {
         wrapper.style.maxWidth = '100%';
         wrapper.style.maxHeight = '100%';
         
-        // Canvas internal size tetap mengikuti resolusi export
-        // Tapi display size mengikuti wrapper
-        const canvas = this.canvas;
-        canvas.style.width = '100%';
-        canvas.style.height = '100%';
+        // Update canvas display size
+        if (this.generator && this.generator.updateDisplaySize) {
+            this.generator.updateDisplaySize();
+        }
         
         // Update aspect ratio indicator
         const indicator = document.getElementById('ratioIndicator');
-        const state = this.generator.state;
-        if (state) {
+        if (indicator && this.generator && this.generator.state) {
+            const state = this.generator.state;
             const [w, h] = state.aspectRatio.split(':').map(Number);
             const displayWidth = Math.round(width);
             const displayHeight = Math.round(height);
             indicator.textContent = `${state.aspectRatio} (${displayWidth}×${displayHeight})`;
         }
         
-        console.log(`📐 Canvas resized: ${width}×${height} (display)`);
+        // Update resolution display
+        if (this.generator && this.generator.state) {
+            const height = parseInt(this.generator.state.resolution);
+            const resText = height >= 4320 ? '8K' : 
+                           height >= 2160 ? '4K' : 
+                           height >= 1080 ? '1080p' : '720p';
+            const resEl = document.getElementById('resValue');
+            if (resEl) resEl.textContent = resText;
+        }
+        
+        console.log(`📐 Display resized: ${Math.round(width)}×${Math.round(height)}`);
     }
 }
 
 // Start app
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOM loaded, starting app...');
     const app = new App();
     window.app = app;
+    
+    // Additional resize after fonts/images load
+    window.addEventListener('load', () => {
+        setTimeout(() => app.resizeCanvas(), 100);
+    });
 });
