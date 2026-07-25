@@ -130,6 +130,8 @@ export class UIController {
 
 // src/ui/UIController.js - Update updateResolution()
 
+// src/ui/UIController.js - Update updateResolution()
+
 updateResolution() {
     const { width, height } = getCanvasSize(
         this.generator.state.resolution,
@@ -137,15 +139,19 @@ updateResolution() {
     );
     this.generator.resize();
     
-    // Update ratio indicator dengan display size
+    // Update ratio indicator
     const displaySize = this.generator.getDisplaySize?.() || { width, height };
-    document.getElementById('ratioIndicator').textContent = 
-        `${this.generator.state.aspectRatio} (${Math.round(displaySize.width)}×${Math.round(displaySize.height)})`;
+    const indicator = document.getElementById('ratioIndicator');
+    if (indicator) {
+        indicator.textContent = 
+            `${this.generator.state.aspectRatio} (${Math.round(displaySize.width)}×${Math.round(displaySize.height)})`;
+    }
     
     const resText = height >= 4320 ? '8K' : 
                    height >= 2160 ? '4K' : 
                    height >= 1080 ? '1080p' : '720p';
-    document.getElementById('resValue').textContent = resText;
+    const resEl = document.getElementById('resValue');
+    if (resEl) resEl.textContent = resText;
     
     // Trigger resize di main.js
     if (window.app && window.app.resizeCanvas) {
