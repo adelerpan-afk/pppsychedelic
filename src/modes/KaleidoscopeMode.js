@@ -19,28 +19,8 @@ export class KaleidoscopeMode extends BaseMode {
 
     getShaderCode() {
         return `
-            float hash(vec2 p) {
-                return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-            }
-            
-            float noise(vec2 p) {
-                vec2 i = floor(p);
-                vec2 f = fract(p);
-                f = f * f * (3.0 - 2.0 * f);
-                return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x),
-                           mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y);
-            }
-            
-            float fbm(vec2 p) {
-                float v = 0.0, a = 0.5, f = 1.0;
-                for (int i = 0; i < 8; i++) {
-                    if (float(i) >= u_complexity) break;
-                    v += a * noise(p * f);
-                    f *= 2.0;
-                    a *= 0.6;
-                }
-                return v;
-            }
+            // ========== KALEIDOSCOPE MODE ==========
+            // Menggunakan shared functions (hash, noise, fbm) dari ShaderBuilder
             
             vec2 kaleidoscopeUV(vec2 uv, float segments) {
                 vec2 p = uv - 0.5;
