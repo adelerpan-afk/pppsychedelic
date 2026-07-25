@@ -21,6 +21,8 @@ body {
     overflow: hidden;
 }
 
+/* ==================== CONTROLS PANEL ==================== */
+
 .controls {
     width: 370px;
     background: var(--panel-bg);
@@ -126,6 +128,17 @@ input[type="range"]::-webkit-slider-thumb {
     box-shadow: 0 0 10px rgba(233, 69, 96, 0.5);
 }
 
+input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+    border: 2px solid var(--highlight);
+    cursor: pointer;
+}
+
+/* ==================== PALETTE ==================== */
+
 .palette-input-row {
     display: flex;
     gap: 6px;
@@ -157,6 +170,12 @@ input[type="range"]::-webkit-slider-thumb {
     color: #ccc;
     cursor: pointer;
     white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.btn-sm:hover {
+    background: #3a3a5a;
+    border-color: #777;
 }
 
 .custom-palette-preview {
@@ -209,6 +228,8 @@ input[type="range"]::-webkit-slider-thumb {
     border-color: #feca57 !important;
 }
 
+/* ==================== BUTTONS ==================== */
+
 .btn {
     background: var(--accent);
     color: white;
@@ -233,12 +254,18 @@ input[type="range"]::-webkit-slider-thumb {
 .btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    transform: none !important;
 }
 
 .btn-export {
     background: transparent;
     border: 2px solid #48dbfb;
     color: #48dbfb;
+}
+
+.btn-export:hover:not(:disabled) {
+    background: #48dbfb;
+    color: #1a1a2e;
 }
 
 .btn-generate {
@@ -259,10 +286,16 @@ input[type="range"]::-webkit-slider-thumb {
     display: none;
 }
 
+.btn-cancel:hover:not(:disabled) {
+    background: #c0392b !important;
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.7; }
 }
+
+/* ==================== FORMAT BUTTONS ==================== */
 
 .format-buttons {
     display: flex;
@@ -278,6 +311,11 @@ input[type="range"]::-webkit-slider-thumb {
     border-radius: 6px;
     cursor: pointer;
     font-size: 0.75rem;
+    transition: all 0.2s;
+}
+
+.format-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .format-btn.active-format {
@@ -287,6 +325,8 @@ input[type="range"]::-webkit-slider-thumb {
     font-weight: bold;
 }
 
+/* ==================== VALUE DISPLAY ==================== */
+
 .value-display {
     font-family: 'Courier New', monospace;
     background: rgba(0, 0, 0, 0.3);
@@ -295,7 +335,7 @@ input[type="range"]::-webkit-slider-thumb {
     font-size: 0.72rem;
 }
 
-/* style.css - Tambahan untuk responsive 16:9 */
+/* ==================== CANVAS CONTAINER ==================== */
 
 .canvas-container {
     flex: 1;
@@ -328,6 +368,8 @@ input[type="range"]::-webkit-slider-thumb {
     image-rendering: auto;
 }
 
+/* ==================== ASPECT RATIO INDICATOR ==================== */
+
 .aspect-ratio-indicator {
     position: absolute;
     bottom: 18px;
@@ -340,7 +382,110 @@ input[type="range"]::-webkit-slider-thumb {
     opacity: 0.8;
     pointer-events: none;
     z-index: 5;
+    font-family: 'Courier New', monospace;
+    color: #888;
 }
+
+/* ==================== TIMER OVERLAY ==================== */
+
+.timer-overlay {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 12px 18px;
+    min-width: 180px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+    user-select: none;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.timer-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.timer-display {
+    font-family: 'Courier New', monospace;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #48dbfb;
+    text-align: center;
+    letter-spacing: 2px;
+    text-shadow: 0 0 20px rgba(72, 219, 251, 0.3);
+    line-height: 1.2;
+}
+
+.timer-display.warning {
+    color: #feca57;
+}
+
+.timer-display.danger {
+    color: #ff6b6b;
+    animation: timerPulse 0.5s ease-in-out infinite;
+}
+
+@keyframes timerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.timer-progress {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.timer-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #48dbfb, #feca57, #ff6b6b);
+    border-radius: 2px;
+    transition: width 0.05s linear;
+    width: 0%;
+}
+
+.timer-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: 'Courier New', monospace;
+    gap: 8px;
+}
+
+.timer-info .timer-status {
+    font-weight: 700;
+}
+
+.timer-info .timer-status.live {
+    color: #2ecc71;
+}
+
+.timer-info .timer-status.paused {
+    color: #feca57;
+}
+
+.timer-info .timer-status.looping {
+    color: #48dbfb;
+    animation: timerLoopPulse 1s ease-in-out infinite;
+}
+
+@keyframes timerLoopPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* ==================== GENERATING OVERLAY ==================== */
 
 .generating-overlay {
     position: absolute;
@@ -356,75 +501,8 @@ input[type="range"]::-webkit-slider-thumb {
     gap: 14px;
     z-index: 20;
     backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     border-radius: 4px;
-}
-
-.generating-overlay.active {
-    display: flex;
-}
-
-/* Responsive untuk mobile */
-@media (max-width: 768px) {
-    .canvas-container {
-        height: 55vh;
-        min-height: 300px;
-    }
-    
-    .canvas-wrapper {
-        aspect-ratio: 16 / 9;
-    }
-}
-
-@media (max-width: 480px) {
-    .canvas-container {
-        height: 45vh;
-        min-height: 200px;
-    }
-}
-
-
-.canvas-container {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #000;
-    position: relative;
-}
-
-canvas {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
-
-.aspect-ratio-indicator {
-    position: absolute;
-    bottom: 18px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.7);
-    padding: 5px 14px;
-    border-radius: 20px;
-    font-size: 0.72rem;
-    opacity: 0.8;
-}
-
-.generating-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.95);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 14px;
-    z-index: 20;
-    backdrop-filter: blur(4px);
 }
 
 .generating-overlay.active {
@@ -471,6 +549,8 @@ canvas {
     margin-top: 5px;
 }
 
+/* ==================== FFMPEG HINT ==================== */
+
 .ffmpeg-hint {
     background: rgba(0, 0, 0, 0.3);
     padding: 8px;
@@ -483,6 +563,8 @@ canvas {
     word-break: break-all;
 }
 
+/* ==================== SELECT ==================== */
+
 select {
     padding: 7px;
     background: #2a2a4a;
@@ -490,7 +572,15 @@ select {
     border: 1px solid #555;
     border-radius: 6px;
     font-size: 0.78rem;
+    cursor: pointer;
+    outline: none;
 }
+
+select:focus {
+    border-color: #48dbfb;
+}
+
+/* ==================== SUMMARY CARD ==================== */
 
 .summary-card {
     position: fixed;
@@ -512,6 +602,8 @@ select {
     to { transform: translateX(100%); opacity: 0; }
 }
 
+/* ==================== STATUS TEXT ==================== */
+
 .status-text {
     font-size: 0.68rem;
     color: #feca57;
@@ -519,6 +611,8 @@ select {
     min-height: 18px;
     font-family: monospace;
 }
+
+/* ==================== SERVER WARNING ==================== */
 
 .server-warning {
     background: rgba(231, 76, 60, 0.2);
@@ -529,6 +623,15 @@ select {
     margin-bottom: 8px;
 }
 
+.server-warning code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.6rem;
+}
+
+/* ==================== MEMORY STATS ==================== */
+
 .memory-stats {
     font-size: 0.6rem;
     color: #48dbfb;
@@ -537,35 +640,7 @@ select {
     font-family: monospace;
 }
 
-@media (max-width: 768px) {
-    body {
-        flex-direction: column;
-    }
-    .controls {
-        width: 100%;
-        max-height: 45vh;
-        border-right: none;
-        border-bottom: 2px solid #2a2a4a;
-    }
-    .generating-progress {
-        width: 280px;
-    }
-}
-
-.control-group input[type="text"] {
-    padding: 7px 10px;
-    background: #1a1a2e;
-    color: #e0e0e0;
-    border: 1px solid #444;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    width: 100%;
-    outline: none;
-}
-
-.control-group input[type="text"]:focus {
-    border-color: #48dbfb;
-}
+/* ==================== BATCH UI ==================== */
 
 .json-buttons {
     display: flex;
@@ -593,6 +668,12 @@ select {
     text-decoration: underline;
 }
 
+.batch-status .clear-batch:hover {
+    color: #ff6b6b;
+}
+
+/* ==================== MODE PARAMS ==================== */
+
 .mode-params {
     background: rgba(0, 0, 0, 0.2);
     border-radius: 8px;
@@ -615,4 +696,238 @@ select {
 #animationMode:focus {
     border-color: #48dbfb;
     outline: none;
+}
+
+/* ==================== TOAST ==================== */
+
+.toast-msg {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 99999;
+    background: rgba(22, 33, 62, 0.95);
+    color: #feca57;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    border: 1px solid rgba(254, 202, 87, 0.3);
+    animation: slideInSummary 0.3s ease;
+    max-width: 350px;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* ==================== RESPONSIVE ==================== */
+
+@media (max-width: 768px) {
+    body {
+        flex-direction: column;
+    }
+
+    .controls {
+        width: 100%;
+        max-height: 45vh;
+        border-right: none;
+        border-bottom: 2px solid #2a2a4a;
+        padding: 16px;
+    }
+
+    .controls h1 {
+        font-size: 1.3rem;
+    }
+
+    .canvas-container {
+        height: 55vh;
+        min-height: 300px;
+    }
+
+    .canvas-wrapper {
+        aspect-ratio: 16 / 9;
+    }
+
+    .generating-progress {
+        width: 280px;
+    }
+
+    .timer-overlay {
+        top: 10px;
+        right: 10px;
+        padding: 8px 12px;
+        min-width: 120px;
+    }
+
+    .timer-display {
+        font-size: 1.2rem;
+    }
+
+    .timer-info {
+        font-size: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .summary-card {
+        max-width: 90%;
+        right: 5%;
+        bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .controls {
+        max-height: 40vh;
+        padding: 12px;
+        gap: 10px;
+    }
+
+    .controls h1 {
+        font-size: 1.1rem;
+    }
+
+    .canvas-container {
+        height: 45vh;
+        min-height: 200px;
+    }
+
+    .timer-overlay {
+        top: 6px;
+        right: 6px;
+        padding: 6px 10px;
+        min-width: 100px;
+        border-radius: 8px;
+    }
+
+    .timer-display {
+        font-size: 0.9rem;
+        letter-spacing: 1px;
+    }
+
+    .timer-info {
+        font-size: 0.45rem;
+        gap: 4px;
+        flex-wrap: wrap;
+    }
+
+    .timer-progress {
+        height: 3px;
+        margin-top: 4px;
+    }
+
+    .generating-progress {
+        width: 200px;
+    }
+
+    .generating-text {
+        font-size: 1rem;
+    }
+
+    .section-title {
+        font-size: 0.6rem;
+    }
+
+    label {
+        font-size: 0.65rem;
+    }
+
+    .btn {
+        font-size: 0.7rem;
+        padding: 8px 12px;
+    }
+
+    .preset-btn {
+        width: 24px;
+        height: 24px;
+    }
+
+    .format-btn {
+        font-size: 0.65rem;
+        padding: 6px;
+    }
+
+    .value-display {
+        font-size: 0.6rem;
+        padding: 1px 5px;
+    }
+
+    .summary-card {
+        max-width: 95%;
+        right: 2.5%;
+        bottom: 8px;
+    }
+
+    .ffmpeg-hint {
+        font-size: 0.5rem;
+    }
+
+    .aspect-ratio-indicator {
+        font-size: 0.6rem;
+        padding: 3px 10px;
+        bottom: 10px;
+    }
+}
+
+/* ==================== FIREFOX SPECIFIC ==================== */
+
+@-moz-document url-prefix() {
+    input[type="range"] {
+        background: transparent;
+    }
+
+    input[type="range"]::-moz-range-track {
+        width: 100%;
+        height: 5px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb);
+    }
+
+    .controls {
+        scrollbar-width: thin;
+    }
+
+    .timer-overlay {
+        backdrop-filter: none;
+    }
+
+    .generating-overlay {
+        backdrop-filter: none;
+    }
+}
+
+/* ==================== SCROLLBAR STYLING ==================== */
+
+.controls::-webkit-scrollbar {
+    width: 5px;
+}
+
+.controls::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.controls::-webkit-scrollbar-thumb {
+    background: #2a2a4a;
+    border-radius: 10px;
+}
+
+.controls::-webkit-scrollbar-thumb:hover {
+    background: #3a3a5a;
+}
+
+/* ==================== PRINT STYLES ==================== */
+
+@media print {
+    .controls {
+        display: none;
+    }
+
+    .canvas-container {
+        height: 100vh;
+        width: 100vw;
+    }
+
+    .timer-overlay {
+        display: none;
+    }
+
+    .aspect-ratio-indicator {
+        display: none;
+    }
 }
