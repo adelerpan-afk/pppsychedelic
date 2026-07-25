@@ -42,16 +42,22 @@ export class UIController {
             document.getElementById('scaleValue').textContent = this.generator.state.scale.toFixed(1);
         });
 
-        // Resolution
-        document.getElementById('aspectRatio').addEventListener('change', (e) => {
-            this.generator.state.aspectRatio = e.target.value;
-            this.updateResolution();
-        });
+// Tambahkan juga di resolution change
+document.getElementById('aspectRatio').addEventListener('change', (e) => {
+    this.generator.state.aspectRatio = e.target.value;
+    this.updateResolution();
+    if (this.generator.resetTimer) {
+        this.generator.resetTimer();
+    }
+});
         
-        document.getElementById('resolution').addEventListener('change', (e) => {
-            this.generator.state.resolution = e.target.value;
-            this.updateResolution();
-        });
+document.getElementById('resolution').addEventListener('change', (e) => {
+    this.generator.state.resolution = e.target.value;
+    this.updateResolution();
+    if (this.generator.resetTimer) {
+        this.generator.resetTimer();
+    }
+});
 
         // Video
         document.getElementById('fps').addEventListener('input', (e) => {
@@ -60,10 +66,16 @@ export class UIController {
             this.exportUI.updateFFmpegCommand();
         });
         
-        document.getElementById('duration').addEventListener('input', (e) => {
-            this.generator.state.duration = parseInt(e.target.value);
-            document.getElementById('durationValue').textContent = this.generator.state.duration;
-        });
+document.getElementById('duration').addEventListener('input', (e) => {
+    this.generator.state.duration = parseInt(e.target.value);
+    document.getElementById('durationValue').textContent = this.generator.state.duration;
+    
+    // ✅ Reset timer agar loop mulai dari awal
+    if (this.generator.resetTimer) {
+        this.generator.resetTimer();
+    }
+});
+        
 
         // Mode
         document.getElementById('animationMode').addEventListener('change', (e) => {
