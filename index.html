@@ -143,12 +143,27 @@
         </div>
     </div>
 
-<!-- index.html - Update canvas container -->
+<!-- index.html - Tambahkan timer overlay di dalam canvas-wrapper -->
 
 <div class="canvas-container" id="canvasContainer">
     <div class="canvas-wrapper" id="canvasWrapper">
         <canvas id="mainCanvas"></canvas>
+        
+        <!-- TIMER OVERLAY -->
+        <div class="timer-overlay" id="timerOverlay">
+            <div class="timer-display" id="timerDisplay">00:00.00</div>
+            <div class="timer-progress">
+                <div class="timer-progress-fill" id="timerProgressFill"></div>
+            </div>
+            <div class="timer-info">
+                <span id="timerFrame">Frame: 0</span>
+                <span id="timerFPS">FPS: 30</span>
+                <span id="timerStatus">● LIVE</span>
+            </div>
+        </div>
+        
         <div class="aspect-ratio-indicator" id="ratioIndicator">16:9</div>
+        
         <div class="generating-overlay" id="generatingOverlay">
             <div class="generating-text">🔥 OPTIMIZED RENDERING...</div>
             <div class="generating-progress">
