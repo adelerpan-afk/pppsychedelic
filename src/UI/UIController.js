@@ -128,21 +128,30 @@ export class UIController {
         this.updateResolution();
     }
 
-    updateResolution() {
-        const { width, height } = getCanvasSize(
-            this.generator.state.resolution,
-            this.generator.state.aspectRatio
-        );
-        this.generator.resize();
-        
-        document.getElementById('ratioIndicator').textContent = 
-            `${this.generator.state.aspectRatio} (${width}×${height})`;
-        
-        const resText = height >= 4320 ? '8K' : 
-                       height >= 2160 ? '4K' : 
-                       height >= 1080 ? '1080p' : '720p';
-        document.getElementById('resValue').textContent = resText;
+// src/ui/UIController.js - Update updateResolution()
+
+updateResolution() {
+    const { width, height } = getCanvasSize(
+        this.generator.state.resolution,
+        this.generator.state.aspectRatio
+    );
+    this.generator.resize();
+    
+    // Update ratio indicator dengan display size
+    const displaySize = this.generator.getDisplaySize?.() || { width, height };
+    document.getElementById('ratioIndicator').textContent = 
+        `${this.generator.state.aspectRatio} (${Math.round(displaySize.width)}×${Math.round(displaySize.height)})`;
+    
+    const resText = height >= 4320 ? '8K' : 
+                   height >= 2160 ? '4K' : 
+                   height >= 1080 ? '1080p' : '720p';
+    document.getElementById('resValue').textContent = resText;
+    
+    // Trigger resize di main.js
+    if (window.app && window.app.resizeCanvas) {
+        setTimeout(() => window.app.resizeCanvas(), 50);
     }
+}
 
     updateModeUI() {
         const mode = this.generator.getActiveMode();
