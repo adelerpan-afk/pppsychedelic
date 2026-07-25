@@ -133,25 +133,30 @@ export class Exporter {
         }
     }
 
-    getFrameParams(frameIndex, width, height) {
-        const state = this.generator.state;
-        const mode = this.generator.getActiveMode();
-        const palette = this.generator.renderer.palette;
-        
-        return {
-            width, height,
-            time: frameIndex / state.fps,
-            distortion: state.distortion,
-            complexity: state.complexity,
-            speed: state.speed,
-            scale: state.scale,
-            aspect: width / height,
-            loopDuration: state.duration,
-            palette: palette,
-            paletteCount: palette.length,
-            ...mode.getParams()
-        };
-    }
+    // src/core/Exporter.js - Update getFrameParams()
+
+getFrameParams(frameIndex, width, height) {
+    const state = this.generator.state;
+    const mode = this.generator.getActiveMode();
+    const palette = this.generator.renderer.palette;
+    
+    // ✅ Kirim raw time, biarkan shader handle loop
+    const time = frameIndex / state.fps;
+    
+    return {
+        width, height,
+        time: time,  // raw time, shader akan modulo
+        distortion: state.distortion,
+        complexity: state.complexity,
+        speed: state.speed,
+        scale: state.scale,
+        aspect: width / height,
+        loopDuration: state.duration,  // untuk modulo di shader
+        palette: palette,
+        paletteCount: palette.length,
+        ...mode.getParams()
+    };
+}
 
     async saveFrame(blob, index, dirHandle) {
         const filename = `frame_${String(index).padStart(4, '0')}.png`;
