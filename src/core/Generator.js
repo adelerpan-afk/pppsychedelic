@@ -36,6 +36,12 @@ export class Generator {
         this.isGenerating = false;
         this.startTime = Date.now();
 
+        // ✅ Frame-based timer
+        this.frameCount = 0;
+        this.totalFrames = 0;
+        this.lastFrameTime = 0;
+        this.isLooping = false;
+
         // Uniforms (akan di-set di initShader)
         this.uniforms = null;
 
@@ -43,7 +49,7 @@ export class Generator {
         this.initModes();
         this.initShader();
 
-        // ✅ Panggil resize setelah semua method tersedia
+        // Panggil resize setelah semua method tersedia
         this.resize();
 
         // Start loop
@@ -116,10 +122,6 @@ export class Generator {
 
     // ==================== CANVAS SIZE MANAGEMENT ====================
 
-    /**
-     * Get internal canvas size based on resolution and aspect ratio
-     * Digunakan untuk export dan render internal
-     */
     getCanvasSize() {
         const height = parseInt(this.state.resolution) || 2160;
         const [w, h] = this.state.aspectRatio.split(':').map(Number) || [16, 9];
@@ -130,10 +132,6 @@ export class Generator {
         };
     }
 
-    /**
-     * Get display size based on container (responsive)
-     * Digunakan untuk tampilan di layar
-     */
     getDisplaySize() {
         const container = this.canvas?.parentElement;
         if (!container) return { width: 0, height: 0 };
@@ -155,12 +153,7 @@ export class Generator {
         return { width, height };
     }
 
-    /**
-     * Resize internal canvas (untuk render dan export)
-     * Ukuran internal tetap berdasarkan resolusi
-     */
     resize() {
-        // ✅ Pastikan method getCanvasSize tersedia
         if (typeof this.getCanvasSize !== 'function') {
             console.error('❌ getCanvasSize is not a function!');
             return { width: 0, height: 0 };
@@ -173,25 +166,21 @@ export class Generator {
             return { width: 0, height: 0 };
         }
 
-        // Resize internal canvas
         this.renderer.resize(width, height);
 
-        // Update aspect uniform
         if (this.uniforms && this.uniforms.aspect) {
             this.renderer.gl.uniform1f(this.uniforms.aspect, width / height);
         }
 
-        // Update display size via CSS
         this.updateDisplaySize();
+
+        // ✅ Reset frame counter saat resize
+        this.resetTimer();
 
         console.log(`📐 Canvas resized: ${width}×${height} (internal)`);
         return { width, height };
     }
 
-    /**
-     * Update display size via CSS (responsive)
-     * Tidak mengubah internal canvas size
-     */
     updateDisplaySize() {
         const container = this.canvas?.parentElement;
         if (!container) return;
@@ -200,7 +189,6 @@ export class Generator {
 
         if (width === 0 || height === 0) return;
 
-        // Set display size via CSS
         this.canvas.style.width = `${width}px`;
         this.canvas.style.height = `${height}px`;
         this.canvas.style.maxWidth = '100%';
@@ -213,25 +201,43 @@ export class Generator {
     // ==================== RENDER LOOP ====================
 
     startLoop() {
-        const loop = () => {
+        const loop = (timestamp) => {
             if (!this.isPaused && !this.isGenerating) {
-                this.renderFrame();
+                this.renderFrame(timestamp);
             }
             requestAnimationFrame(loop);
         };
-        loop();
+        requestAnimationFrame(loop);
         console.log('🔄 Render loop started');
     }
 
-    renderFrame() {
+    renderFrame(timestamp) {
         const gl = this.renderer.gl;
         if (!gl || !this.uniforms) return;
 
-        const elapsed = this.getElapsedTime();
+        // ✅ Frame-based time calculation
+        const fps = this.state.fps || 30;
+        const duration = this.state.duration || 5;
+        const totalFrames = Math.round(duration * fps);
+        
+        // Increment frame counter
+        this.frameCount++;
+        
+        // Calculate current frame in loop
+        const currentFrame = this.frameCount % totalFrames;
+        const elapsed = currentFrame / fps;
+        
+        // Check if loop restarted
+        if (currentFrame === 0 && this.frameCount > 0) {
+            this.isLooping = true;
+            console.log('🔄 Loop restarted at frame', this.frameCount);
+        } else {
+            this.isLooping = false;
+        }
 
-        // Common uniforms
+        // Update uniforms with frame-based time
         gl.uniform1f(this.uniforms.time, elapsed);
-        gl.uniform1f(this.uniforms.loopDuration, this.state.duration);
+        gl.uniform1f(this.uniforms.loopDuration, duration);
 
         // Mode-specific uniforms
         const mode = this.getActiveMode();
@@ -239,25 +245,44 @@ export class Generator {
             mode.updateUniforms(gl, this.uniforms, this.state);
         }
 
-        // Draw
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
 
-// Tambahkan method untuk reset timer
-resetTimer() {
-    this.startTime = Date.now();
-    console.log('⏱️ Timer reset');
-}
-    
-// src/core/Generator.js - Update getElapsedTime()
+    // ==================== TIMER METHODS ====================
 
-// Update getElapsedTime() untuk raw time
-getElapsedTime() {
-    const raw = (Date.now() - this.startTime) / 1000;
-    const dur = this.state.duration;
-    // Return raw time, shader handle modulo
-    return raw;
-}
+    getElapsedTime() {
+        const fps = this.state.fps || 30;
+        const duration = this.state.duration || 5;
+        const totalFrames = Math.round(duration * fps);
+        const currentFrame = this.frameCount % totalFrames;
+        return currentFrame / fps;
+    }
+
+    getCurrentFrame() {
+        const fps = this.state.fps || 30;
+        const duration = this.state.duration || 5;
+        const totalFrames = Math.round(duration * fps);
+        return this.frameCount % totalFrames;
+    }
+
+    getTotalFrames() {
+        const fps = this.state.fps || 30;
+        const duration = this.state.duration || 5;
+        return Math.round(duration * fps);
+    }
+
+    getLoopProgress() {
+        const totalFrames = this.getTotalFrames();
+        if (totalFrames === 0) return 0;
+        return this.getCurrentFrame() / totalFrames;
+    }
+
+    resetTimer() {
+        this.frameCount = 0;
+        this.startTime = Date.now();
+        this.isLooping = false;
+        console.log('⏱️ Timer reset');
+    }
 
     // ==================== EXPORT ====================
 
