@@ -10,7 +10,7 @@ export class UIController {
         this.generator = generator;
         this.paletteUI = new PaletteUI(generator);
         this.exportUI = new ExportUI(generator);
-        this.batchUI = new BatchUI(generator, this.paletteUI);
+        this.batchUI = new BatchUI(generator, this.paletteUI, this);
         
         this.bindEvents();
         this.updateUI();
@@ -131,12 +131,22 @@ document.getElementById('duration').addEventListener('input', (e) => {
         document.getElementById('scale').value = s.scale;
         document.getElementById('scaleValue').textContent = s.scale.toFixed(1);
         document.getElementById('aspectRatio').value = s.aspectRatio;
+
+        const ratioVal = document.getElementById('ratioValue');
+        if (ratioVal) ratioVal.textContent = s.aspectRatio;
+
         document.getElementById('resolution').value = s.resolution;
         document.getElementById('fps').value = s.fps;
         document.getElementById('fpsValue').textContent = s.fps;
         document.getElementById('duration').value = s.duration;
         document.getElementById('durationValue').textContent = s.duration;
         
+        const modeSelect = document.getElementById('animationMode');
+        if (modeSelect) {
+            modeSelect.value = this.generator.activeMode;
+        }
+
+        this.updateModeUI();
         this.updateResolution();
     }
 
@@ -151,7 +161,11 @@ updateResolution() {
     );
     this.generator.resize();
     
-    // Update ratio indicator
+    // Update ratio text label and ratio indicator
+    const ratioVal = document.getElementById('ratioValue');
+    if (ratioVal) {
+        ratioVal.textContent = this.generator.state.aspectRatio;
+    }
     const displaySize = this.generator.getDisplaySize?.() || { width, height };
     const indicator = document.getElementById('ratioIndicator');
     if (indicator) {
@@ -177,26 +191,37 @@ updateResolution() {
         if (!container) return;
         
         container.innerHTML = '';
+
+        // Skip duplicate rendering for psychedelic mode since its parameters are already in the main controls!
+        if (mode.name === 'psychedelic') {
+            return;
+        }
+
         const defs = mode.getParamDefinitions();
         
         defs.forEach(def => {
             const group = document.createElement('div');
             group.className = 'control-group';
             
+            const currentVal = mode.params[def.id] !== undefined ? mode.params[def.id] : def.default;
+
             const label = document.createElement('label');
-            label.innerHTML = `${def.label} <span class="value-display" id="${def.id}Value">${def.default}</span>`;
+            label.innerHTML = `${def.label} <span class="value-display" id="${def.id}Value">${currentVal}</span>`;
             
             const input = document.createElement('input');
             input.type = 'range';
-            input.id = def.id;
+            input.id = `mode_param_${def.id}`;
             input.min = def.min;
             input.max = def.max;
             input.step = def.step;
-            input.value = def.default;
+            input.value = currentVal;
             
             input.addEventListener('input', (e) => {
                 const val = parseFloat(e.target.value);
-                document.getElementById(`${def.id}Value`).textContent = val;
+                const displayEl = document.getElementById(`${def.id}Value`);
+                if (displayEl) {
+                    displayEl.textContent = val;
+                }
                 mode.params[def.id] = val;
                 mode.updateUniforms(this.generator.renderer.gl, this.generator.uniforms, mode.params);
             });

@@ -30,7 +30,7 @@ export class Generator {
             speed: 0.5,
             scale: 2.0,
             aspectRatio: '16:9',
-            resolution: '2160',
+            resolution: '1080',
             fps: 30,
             duration: 5
         };

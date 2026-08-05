@@ -4,9 +4,10 @@ import { DEFAULT_PALETTES } from '../utils/constants.js';
 import { hexToRgb } from '../utils/helpers.js';
 
 export class BatchUI {
-    constructor(generator, paletteUI) {
+    constructor(generator, paletteUI, uiController) {
         this.generator = generator;
         this.paletteUI = paletteUI;
+        this.uiController = uiController;
         this.batchSettings = null;
         this.batchCancelled = false;
         this.isBatchRunning = false;
@@ -136,22 +137,8 @@ export class BatchUI {
             }
         }
         
-        if (settings.paletteName && settings.paletteName !== 'custom' && DEFAULT_PALETTES[settings.paletteName]) {
-            this.paletteUI.setPalette(settings.paletteName);
-        } else if (Array.isArray(settings.palette) && settings.palette.length >= 2) {
-            const parsed = settings.palette.map(c => {
-                if (Array.isArray(c)) return c;
-                if (typeof c === 'string') return hexToRgb(c);
-                return null;
-            }).filter(Boolean);
-            
-            if (parsed.length >= 2) {
-                this.paletteUI.customPalette = parsed;
-                this.generator.setPalette(parsed);
-                this.paletteUI.updatePresetActive('custom');
-                this.paletteUI.updateCustomPreview(parsed);
-                this.paletteUI.currentPalette = 'custom';
-            }
+        if (this.paletteUI && typeof this.paletteUI.applyPaletteFromSettings === 'function') {
+            this.paletteUI.applyPaletteFromSettings(settings);
         }
         
         this.syncUIFromState();
@@ -299,24 +286,37 @@ export class BatchUI {
     }
 
     syncUIFromState() {
-        const s = this.generator.state;
-        document.getElementById('distortion').value = s.distortion;
-        document.getElementById('distortValue').textContent = s.distortion.toFixed(1);
-        document.getElementById('complexity').value = s.complexity;
-        document.getElementById('complexValue').textContent = s.complexity;
-        document.getElementById('speed').value = s.speed;
-        document.getElementById('speedValue').textContent = s.speed.toFixed(2);
-        document.getElementById('scale').value = s.scale;
-        document.getElementById('scaleValue').textContent = s.scale.toFixed(1);
-        document.getElementById('aspectRatio').value = s.aspectRatio;
-        document.getElementById('resolution').value = s.resolution;
-        document.getElementById('fps').value = s.fps;
-        document.getElementById('fpsValue').textContent = s.fps;
-        document.getElementById('duration').value = s.duration;
-        document.getElementById('durationValue').textContent = s.duration;
-        
-        if (this.generator.resize) {
-            this.generator.resize();
+        if (this.uiController && typeof this.uiController.updateUI === 'function') {
+            this.uiController.updateUI();
+        } else {
+            const s = this.generator.state;
+            document.getElementById('distortion').value = s.distortion;
+            document.getElementById('distortValue').textContent = s.distortion.toFixed(1);
+            document.getElementById('complexity').value = s.complexity;
+            document.getElementById('complexValue').textContent = s.complexity;
+            document.getElementById('speed').value = s.speed;
+            document.getElementById('speedValue').textContent = s.speed.toFixed(2);
+            document.getElementById('scale').value = s.scale;
+            document.getElementById('scaleValue').textContent = s.scale.toFixed(1);
+            document.getElementById('aspectRatio').value = s.aspectRatio;
+
+            const ratioVal = document.getElementById('ratioValue');
+            if (ratioVal) ratioVal.textContent = s.aspectRatio;
+
+            document.getElementById('resolution').value = s.resolution;
+            document.getElementById('fps').value = s.fps;
+            document.getElementById('fpsValue').textContent = s.fps;
+            document.getElementById('duration').value = s.duration;
+            document.getElementById('durationValue').textContent = s.duration;
+
+            const modeSelect = document.getElementById('animationMode');
+            if (modeSelect) {
+                modeSelect.value = this.generator.activeMode;
+            }
+
+            if (this.generator.resize) {
+                this.generator.resize();
+            }
         }
     }
 
